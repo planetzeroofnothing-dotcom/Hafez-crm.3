@@ -133,6 +133,18 @@
     box-shadow:0 8px 24px rgba(168,64,42,.45); z-index:60; border:none; font-size:24px; cursor:pointer;
   }
   #geminiBubble:hover{background:var(--brick-dark);}
+  #voiceBubble{
+    position:fixed; bottom:22px; right:88px; width:56px; height:56px; border-radius:50%;
+    background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 24px rgba(47,75,60,.45); z-index:60; border:none; font-size:22px; cursor:pointer;
+  }
+  #voiceBubble:hover{filter:brightness(1.08);}
+  #voiceBubble.on{background:var(--brick); animation:voicePulse 1.4s infinite;}
+  @keyframes voicePulse{
+    0%{box-shadow:0 0 0 0 rgba(168,64,42,.5);}
+    70%{box-shadow:0 0 0 16px rgba(168,64,42,0);}
+    100%{box-shadow:0 0 0 0 rgba(168,64,42,0);}
+  }
   #geminiPanel{
     position:fixed; bottom:90px; right:22px; width:380px; max-width:calc(100vw - 40px);
     height:520px; max-height:calc(100vh - 130px); background:var(--card); border:1px solid var(--line);
@@ -261,6 +273,14 @@
         <span id="keySavedNote" style="font-size:13px; color:var(--teal); margin-left:10px;"></span>
       </div>
       <div class="card" style="padding:20px 22px; max-width:520px; margin-top:16px;">
+        <div class="section-title">task notifications</div>
+        <p style="font-size:13.5px; color:var(--ink-soft); margin-top:0;">
+          enable browser notifications so dealbook alerts you when a task's due time arrives. the tab needs to stay open for this to work — browsers don't allow background notifications for a plain website.
+        </p>
+        <button class="btn brick sm" onclick="enableTaskNotifications()">enable notifications</button>
+        <span id="notifStatusNote" style="font-size:13px; color:var(--teal); margin-left:10px;"></span>
+      </div>
+      <div class="card" style="padding:20px 22px; max-width:520px; margin-top:16px;">
         <div class="section-title">data</div>
         <p style="font-size:13.5px; color:var(--ink-soft); margin-top:0;">everything is saved to firebase and local storage</p>
         <button class="btn danger sm" onclick="if(confirm('erase all buyers and tasks?')){localStorage.clear();location.reload();}">erase all data</button>
@@ -358,6 +378,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<button id="voiceBubble" onclick="toggleVoiceMode()" title="محادثة صوتية مع جيمناي">🎙️</button>
 <button id="geminiBubble" onclick="toggleGeminiPanel()" title="ask gemini">✦</button>
 <div id="geminiPanel">
   <div class="gp-head">
@@ -1024,6 +1045,139 @@ async function callGeminiFunction(name, args){
   }
 }
 
+// ---------- task notifications ----------
+function getNotifiedSet(){
+  try{ return new Set(JSON.parse(localStorage.getItem('notifiedTaskIds')||'[]')); }
+  catch(e){ return new Set(); }
+}
+function saveNotifiedSet(set){
+  localStorage.setItem('notifiedTaskIds', JSON.stringify(Array.from(set)));
+}
+function checkDueTasks(){
+  if(typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const notified = getNotifiedSet();
+  let changed = false;
+  store.tasks.forEach(t=>{
+    if(t.done || !t.dueDate) return;
+    if(notified.has(t.id)) return;
+    const timePart = t.dueTime || '09:00';
+    const due = new Date(t.dueDate + 'T' + timePart + ':00');
+    if(!isNaN(due.getTime()) && due <= now){
+      try{
+        const n = new Notification('dealbook — task due', {
+          body: t.title + (t.notes ? ' — ' + t.notes : ''),
+          tag: 'task-' + t.id
+        });
+        n.onclick = ()=>{ window.focus(); };
+      }catch(e){ console.error('notification error', e); }
+      notified.add(t.id);
+      changed = true;
+    }
+  });
+  if(changed) saveNotifiedSet(notified);
+}
+let taskNotifInterval = null;
+function startTaskNotificationChecks(){
+  if(taskNotifInterval) return;
+  checkDueTasks();
+  taskNotifInterval = setInterval(checkDueTasks, 30000);
+}
+function enableTaskNotifications(){
+  if(typeof Notification === 'undefined'){
+    document.getElementById('notifStatusNote').textContent = 'المتصفح ده مش بيدعم الإشعارات';
+    return;
+  }
+  Notification.requestPermission().then(perm=>{
+    const note = document.getElementById('notifStatusNote');
+    if(perm === 'granted'){
+      note.textContent = 'الإشعارات مفعّلة ✓';
+      startTaskNotificationChecks();
+    } else {
+      note.textContent = 'تم رفض إذن الإشعارات';
+    }
+  });
+}
+if(typeof Notification !== 'undefined' && Notification.permission === 'granted'){
+  startTaskNotificationChecks();
+}
+
+// ---------- voice chat (speech-to-text + text-to-speech), same tool access as text chat ----------
+let recognition = null;
+let voiceModeOn = false;
+let isSpeaking = false;
+
+function setupRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return null;
+  const r = new SR();
+  r.lang = 'ar-EG';
+  r.continuous = false;
+  r.interimResults = false;
+  r.onresult = (e)=>{
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('aiInput').value = transcript;
+    askGemini(transcript);
+  };
+  r.onerror = (e)=>{
+    console.error('speech recognition error', e.error);
+    if(voiceModeOn && e.error !== 'not-allowed'){
+      setTimeout(()=>{ if(voiceModeOn) startListening(); }, 1200);
+    } else if(e.error === 'not-allowed'){
+      toast('محتاج إذن المايك عشان الصوت يشتغل');
+      voiceModeOn = false;
+      updateVoiceUI();
+    }
+  };
+  r.onend = ()=>{
+    if(voiceModeOn && !isSpeaking){
+      setTimeout(()=>{ if(voiceModeOn) startListening(); }, 400);
+    }
+  };
+  return r;
+}
+function startListening(){
+  if(!recognition) recognition = setupRecognition();
+  if(!recognition){ toast('المتصفح ده مش بيدعم التعرف على الصوت'); voiceModeOn = false; updateVoiceUI(); return; }
+  try{ recognition.start(); }catch(e){}
+}
+function stopListening(){
+  if(recognition){ try{ recognition.stop(); }catch(e){} }
+}
+function updateVoiceUI(){
+  const bubble = document.getElementById('voiceBubble');
+  if(voiceModeOn) bubble.classList.add('on'); else bubble.classList.remove('on');
+}
+function toggleVoiceMode(){
+  voiceModeOn = !voiceModeOn;
+  updateVoiceUI();
+  if(voiceModeOn){
+    document.getElementById('geminiPanel').classList.add('show');
+    checkAiKey();
+    startListening();
+  } else {
+    stopListening();
+    if('speechSynthesis' in window) speechSynthesis.cancel();
+    isSpeaking = false;
+  }
+}
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  isSpeaking = true;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ar-EG';
+  u.onend = ()=>{
+    isSpeaking = false;
+    if(voiceModeOn) startListening();
+  };
+  u.onerror = ()=>{
+    isSpeaking = false;
+    if(voiceModeOn) startListening();
+  };
+  speechSynthesis.speak(u);
+}
+
 function toggleGeminiPanel(){
   const p = document.getElementById('geminiPanel');
   p.classList.toggle('show');
@@ -1038,14 +1192,15 @@ function checkAiKey(){
     warn.innerHTML = '';
   }
 }
-async function askGemini(){
+async function askGemini(voiceText){
   let key = localStorage.getItem('geminiKey') || document.getElementById('geminiKeyInput')?.value?.trim();
   const input = document.getElementById('aiInput');
   const log = document.getElementById('aiLog');
-  const q = input.value.trim();
+  const q = (typeof voiceText === 'string' ? voiceText : input.value).trim();
   if(!q) return;
   if(!key){
     log.innerHTML += '<div class="ai-msg err">please set your gemini api key in settings</div>';
+    if(voiceModeOn) speak('محتاج تحط مفتاح جيمناي الأول من الإعدادات');
     return;
   }
   log.innerHTML += '<div class="ai-msg user">'+esc(q)+'</div>';
@@ -1069,6 +1224,7 @@ async function askGemini(){
       const data = await res.json();
       if(data.error){
         log.innerHTML += '<div class="ai-msg err">api error: '+esc(data.error.message)+'</div>';
+        if(voiceModeOn) speak('حصل خطأ من جيمناي، تأكد من صحة المفتاح');
         break;
       }
       const parts = data.candidates?.[0]?.content?.parts || [];
@@ -1085,10 +1241,12 @@ async function askGemini(){
       }
       const text = parts.map(p=>p.text).filter(Boolean).join('\n') || 'no response';
       log.innerHTML += '<div class="ai-msg ai">'+esc(text)+'</div>';
+      if(voiceModeOn) speak(text);
       break;
     }
   } catch(e) {
     log.innerHTML += '<div class="ai-msg err">network error calling gemini api</div>';
+    if(voiceModeOn) speak('حصل خطأ في الاتصال بجيمناي');
   }
   log.scrollTop = log.scrollHeight;
 }
