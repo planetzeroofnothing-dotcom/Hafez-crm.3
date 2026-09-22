@@ -1,1 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dealbook buyer crm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=zilla+slab:wght@400;500;600;700&family=source+sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#211d18;
+    --ink-soft:#5a5346;
+    --paper:#f3eee2;
+    --card:#fbf8f1;
+    --line:#ddd4bd;
+    --brick:#a8402a;
+    --brick-dark:#8a3320;
+    --teal:#2f4b3c;
+    --teal-soft:#e2e9e2;
+    --gold:#b8893c;
+    --shadow: 0 1px 2px rgba(33,29,24,.06), 0 6px 20px rgba(33,29,24,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'source sans 3', system-ui, sans-serif; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.serif{font-family:'zilla slab', georgia, serif;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:220px; flex-shrink:0; background:var(--ink); color:#efe8d8;
+    display:flex; flex-direction:column; padding:24px 0;
+  }
+  .brand{
+    font-family:'zilla slab', serif; font-size:22px; font-weight:600;
+    padding:0 24px 22px 24px; border-bottom:1px solid rgba(239,232,216,.14);
+    margin-bottom:14px; letter-spacing:.2px;
+  }
+  .brand span{color:var(--gold);}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:12px 24px; font-size:15px;
+    color:#cfc6ae; border-left:3px solid transparent; transition:background .15s, color .15s; cursor:pointer;
+  }
+  .nav-item:hover{background:rgba(239,232,216,.06); color:#fff;}
+  .nav-item.active{background:rgba(239,232,216,.09); color:#fff; border-left-color:var(--gold);}
+  .sidebar-foot{margin-top:auto; padding:14px 24px 0 24px; font-size:12px; color:#8b8271; border-top:1px solid rgba(239,232,216,.1);}
+  .main{flex:1; min-width:0; padding:20px 40px 100px; max-width:1180px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .page-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:12px;}
+  .page-head h1{font-size:28px; margin:0; font-weight:600;}
+  .page-head p{margin:4px 0 0; color:var(--ink-soft); font-size:14px;}
+  .btn{
+    border:1px solid var(--ink); background:var(--ink); color:#fff; padding:9px 16px; border-radius:3px;
+    font-size:14px; font-weight:600; display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:hover{background:#38332b;}
+  .btn.brick{background:var(--brick); border-color:var(--brick);}
+  .btn.brick:hover{background:var(--brick-dark);}
+  .btn.ghost{background:transparent; color:var(--ink); border-color:var(--line);}
+  .btn.ghost:hover{background:#eee6d2;}
+  .btn.sm{padding:6px 11px; font-size:13px;}
+  .btn.danger{background:transparent; border-color:var(--line); color:var(--brick);}
+  .btn.danger:hover{background:#f4e2dc;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:6px; box-shadow:var(--shadow);}
+  .grid{display:grid; gap:18px;}
+  .grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  .grid.cols-2{grid-template-columns:2fr 1fr;}
+  @media (max-width:900px){ .grid.cols-3, .grid.cols-2{grid-template-columns:1fr;} }
+  .stat{padding:18px 20px;}
+  .stat .num{font-family:'zilla slab',serif; font-size:32px; font-weight:600; line-height:1;}
+  .stat .label{color:var(--ink-soft); font-size:13px; margin-top:6px;}
+  .section-title{font-size:13px; color:var(--ink-soft); font-weight:600; margin:0 0 10px;}
+  .task-row, .buyer-row{display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border-bottom:1px solid var(--line);}
+  .task-row:last-child, .buyer-row:last-child{border-bottom:none;}
+  .task-check{width:19px;height:19px; border-radius:50%; border:2px solid var(--line); flex-shrink:0; margin-top:2px; background:#fff; cursor:pointer;}
+  .task-check.done{background:var(--teal); border-color:var(--teal);}
+  .task-body{flex:1; min-width:0;}
+  .task-title{font-weight:600; font-size:14.5px;}
+  .task-title.done{text-decoration:line-through; color:var(--ink-soft);}
+  .task-meta{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .badge{display:inline-block; font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px; letter-spacing:.2px;}
+  .badge.hot{background:#f4e2dc; color:var(--brick-dark);}
+  .badge.warm{background:#f2e6c9; color:#7a5a1c;}
+  .badge.cold{background:#teal-soft; color:var(--teal);}
+  .empty{padding:26px 16px; text-align:center; color:var(--ink-soft); font-size:14px;}
+  input, select, textarea{
+    font-family:inherit; font-size:14px; padding:9px 11px; border:1px solid var(--line);
+    border-radius:4px; background:#fff; color:var(--ink); width:100%;
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--gold); outline-offset:0;}
+  label{font-size:12.5px; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:5px;}
+  .field{margin-bottom:14px; position:relative;}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .key-note{font-size:11.5px; color:var(--ink-soft); margin-top:4px;}
+  .geo-status{font-size:11.5px; margin-top:4px; color:var(--teal);}
+  .geo-status.err{color:var(--brick-dark);}
+  .flag-row{display:flex; gap:18px; padding:2px 0 4px;}
+  .flag-check{display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--ink); cursor:pointer;}
+  .flag-check input{width:17px; height:17px; padding:0; accent-color:var(--teal);}
+  .modal-bg{display:none; position:fixed; inset:0; background:rgba(33,29,24,.45); align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; z-index:50;}
+  .modal-bg.show{display:flex;}
+  .modal{background:var(--card); border-radius:8px; width:100%; max-width:560px; padding:26px 28px; box-shadow:0 20px 60px rgba(0,0,0,.25);}
+  .modal h2{margin:0 0 16px; font-size:20px;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:18px;}
+  .rating-row{display:flex; align-items:center; gap:12px;}
+  .rating-row input[type=range]{flex:1;}
+  .rating-num{font-family:'zilla slab',serif; font-weight:700; font-size:20px; width:28px; text-align:center;}
+  .chip-list{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+  .chip{background:var(--teal-soft); color:var(--teal); font-size:12.5px; padding:4px 10px; border-radius:20px; display:flex; align-items:center; gap:6px;}
+  .chip button{background:none; border:none; color:var(--teal); font-size:14px; line-height:1; padding:0;}
+  .offer-item{border:1px solid var(--line); border-radius:5px; padding:10px 12px; margin-top:8px; font-size:13.5px; background:#fff; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .offer-item .oline1{font-weight:600;}
+  .offer-item .onotes{color:var(--ink-soft); margin-top:3px;}
+  .offer-item button{background:none; border:none; color:var(--brick); font-size:16px; line-height:1; padding:2px;}
+  .search-bar{display:flex; gap:10px; margin-bottom:18px;}
+  .search-bar input{flex:1;}
+  .buyer-name{font-weight:700; font-size:15px;}
+  .buyer-sub{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .buyer-actions{display:flex; gap:6px; flex-shrink:0;}
+  .toast{
+    position:fixed; bottom:20px; left:20px; background:var(--ink); color:#fff; padding:12px 18px; border-radius:6px;
+    font-size:13.5px; box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; transform:translateY(8px); transition:.25s; pointer-events:none; z-index:100;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+  #geminiBubble{
+    position:fixed; bottom:22px; right:22px; width:56px; height:56px; border-radius:50%;
+    background:var(--brick); color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 24px rgba(168,64,42,.45); z-index:60; border:none; font-size:24px; cursor:pointer;
+  }
+  #geminiBubble:hover{background:var(--brick-dark);}
+  #voiceBubble{
+    position:fixed; bottom:22px; right:88px; width:56px; height:56px; border-radius:50%;
+    background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 24px rgba(47,75,60,.45); z-index:60; border:none; font-size:22px; cursor:pointer;
+  }
+  #voiceBubble:hover{filter:brightness(1.08);}
+  #voiceBubble.on{background:var(--brick); animation:voicePulse 1.4s infinite;}
+  @keyframes voicePulse{
+    0%{box-shadow:0 0 0 0 rgba(168,64,42,.5);}
+    70%{box-shadow:0 0 0 16px rgba(168,64,42,0);}
+    100%{box-shadow:0 0 0 0 rgba(168,64,42,0);}
+  }
+  #geminiPanel{
+    position:fixed; bottom:90px; right:22px; width:380px; max-width:calc(100vw - 40px);
+    height:520px; max-height:calc(100vh - 130px); background:var(--card); border:1px solid var(--line);
+    border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.3); z-index:60; display:none;
+    flex-direction:column; overflow:hidden;
+  }
+  #geminiPanel.show{display:flex;}
+  .gp-head{background:var(--ink); color:#efe8d8; padding:13px 16px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;}
+  .gp-head .t{font-family:'zilla slab',serif; font-size:16px; font-weight:600;}
+  .gp-head .t span{color:var(--gold);}
+  .gp-close{background:none; border:none; color:#cfc6ae; font-size:18px; padding:2px 6px; cursor:pointer;}
+  .gp-log{flex:1; overflow-y:auto; padding:14px 14px 6px;}
+  .ai-msg{max-width:86%; padding:10px 13px; border-radius:10px; margin-bottom:11px; font-size:13.8px; line-height:1.5; white-space:pre-wrap;}
+  .ai-msg.user{background:var(--ink); color:#fff; margin-left:auto; border-bottom-right-radius:2px;}
+  .ai-msg.ai{background:var(--teal-soft); color:#1c2f26; border-bottom-left-radius:2px;}
+  .ai-msg.err{background:#f4e2dc; color:var(--brick-dark);}
+  .gp-input-row{display:flex; gap:8px; padding:10px; border-top:1px solid var(--line); flex-shrink:0;}
+  .gp-input-row textarea{resize:none; height:40px; font-size:13.8px; padding:8px 10px;}
+  .gp-input-row button{flex-shrink:0;}
+  .gp-keywarning{padding:10px 14px; background:#f2e6c9; color:#7a5a1c; font-size:12.5px; flex-shrink:0;}
+  ::-webkit-scrollbar{width:9px;}
+  ::-webkit-scrollbar-thumb{background:#cfc4a4; border-radius:6px;}
 
+  :root[data-theme="dark"]{
+    --ink:#efe8d8;
+    --ink-soft:#b3aa98;
+    --paper:#18160f;
+    --card:#221f18;
+    --line:#3a362a;
+    --brick:#c15a3f;
+    --brick-dark:#d16a4e;
+    --teal:#6fa688;
+    --teal-soft:#243128;
+    --gold:#d4a054;
+  }
+  :root[data-theme="dark"] input,
+  :root[data-theme="dark"] select,
+  :root[data-theme="dark"] textarea{
+    background:#1c1a13; color:var(--ink); border-color:var(--line);
+  }
+  :root[data-theme="dark"] .badge.hot{background:#3a2119; color:#f0a98d;}
+  :root[data-theme="dark"] .badge.warm{background:#332c17; color:#e0c284;}
+  #themeToggle{justify-content:space-between;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand">deal<span>book</span></div>
+    <div class="nav-item active" data-page="dashboard">dashboard</div>
+    <div class="nav-item" data-page="buyers">buyers</div>
+    <div class="nav-item" data-page="offers">offers</div>
+    <div class="nav-item" data-page="tasks">tasks</div>
+    <div class="nav-item" data-page="city">by city</div>
+    <div class="nav-item" data-page="settings">settings</div>
+    <div class="nav-item" id="themeToggle" onclick="toggleTheme()">🌙 dark mode</div>
+    <div class="sidebar-foot">your data stays in firebase and browser</div>
+  </div>
+  <div class="main">
+    <div class="page active" id="page-dashboard">
+      <div class="page-head">
+        <div><h1>dashboard</h1><p id="todayDate"></p></div>
+        <button class="btn brick" onclick="openTaskModal()">+ new task</button>
+      </div>
+      <div class="grid cols-3" style="margin-bottom:22px;">
+        <div class="card stat"><div class="num" id="statBuyers">0</div><div class="label">buyers tracked</div></div>
+        <div class="card stat"><div class="num" id="statHot">0</div><div class="label">hot leads</div></div>
+        <div class="card stat"><div class="num" id="statTasksToday">0</div><div class="label">tasks due today</div></div>
+      </div>
+      <div class="grid cols-2">
+        <div class="card" style="padding:18px 20px;">
+          <div class="section-title">today & overdue tasks</div>
+          <div id="dashTaskList"></div>
+        </div>
+        <div class="card" style="padding:18px 20px;">
+          <div class="section-title">hot leads</div>
+          <div id="dashHotList"></div>
+        </div>
+      </div>
+    </div>
+    <div class="page" id="page-buyers">
+      <div class="page-head">
+        <div><h1>buyers</h1><p>every buyer, their rating, and their offer history</p></div>
+        <button class="btn brick" onclick="openBuyerModal()">+ add buyer</button>
+      </div>
+      <div class="search-bar"><input id="buyerSearch" placeholder="search by name, city, state or address..." oninput="renderBuyers()"></div>
+      <div class="card" id="buyerList"></div>
+    </div>
+    <div class="page" id="page-offers">
+      <div class="page-head">
+        <div><h1>offers</h1><p>every offer, laid out by when it landed</p></div>
+      </div>
+      <div id="offersTimeline"></div>
+    </div>
+    <div class="page" id="page-tasks">
+      <div class="page-head">
+        <div><h1>tasks</h1><p>reminders you set for yourself</p></div>
+        <button class="btn brick" onclick="openTaskModal()">+ new task</button>
+      </div>
+      <div class="card" id="taskList"></div>
+    </div>
+    <div class="page" id="page-city">
+      <div class="page-head">
+        <div><h1>by city</h1><p>type any city in us or texas to filter instantly</p></div>
+      </div>
+      <div class="search-bar">
+        <input id="citySearch" list="cityDatalist" placeholder="type any city, e.g. dallas, tx or marfa, tx..." oninput="renderCityResults()">
+        <button class="btn ghost" onclick="renderCityResults()">search</button>
+      </div>
+      <datalist id="cityDatalist"></datalist>
+      <div class="card" id="cityResults"></div>
+    </div>
+    <div class="page" id="page-settings">
+      <div class="page-head"><div><h1>settings</h1><p>connect your gemini api key and manage data</p></div></div>
+      <div class="card" style="padding:20px 22px; max-width:520px;">
+        <div class="section-title">gemini api key</div>
+        <div class="field">
+          <input type="password" id="geminiKeyInput" placeholder="paste your gemini api key">
+          <div class="key-note">
+            get a free key at aistudio.google.com/apikey.
+            stored only in this browser local storage.
+          </div>
+        </div>
+        <button class="btn brick sm" onclick="saveGeminiKey()">save key</button>
+        <button class="btn ghost sm" onclick="testGeminiKey()">test connection</button>
+        <span id="keySavedNote" style="font-size:13px; color:var(--teal); margin-left:10px;"></span>
+      </div>
+      <div class="card" style="padding:20px 22px; max-width:520px; margin-top:16px;">
+        <div class="section-title">task notifications</div>
+        <p style="font-size:13.5px; color:var(--ink-soft); margin-top:0;">
+          enable browser notifications so dealbook alerts you when a task's due time arrives. the tab needs to stay open for this to work — browsers don't allow background notifications for a plain website.
+        </p>
+        <button class="btn brick sm" onclick="enableTaskNotifications()">enable notifications</button>
+        <span id="notifStatusNote" style="font-size:13px; color:var(--teal); margin-left:10px;"></span>
+      </div>
+      <div class="card" style="padding:20px 22px; max-width:520px; margin-top:16px;">
+        <div class="section-title">data</div>
+        <p style="font-size:13.5px; color:var(--ink-soft); margin-top:0;">everything is saved to firebase and local storage</p>
+        <button class="btn danger sm" onclick="if(confirm('erase all buyers and tasks?')){localStorage.clear();location.reload();}">erase all data</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="buyerModalBg">
+  <div class="modal">
+    <h2 id="buyerModalTitle">add buyer</h2>
+    <input type="hidden" id="buyerId">
+    <div class="field-row">
+      <div class="field"><label>name</label><input id="buyerName" placeholder="e.g. mike alvarez"></div>
+      <div class="field"><label>phone</label><input id="buyerPhone" placeholder="(214) 555-0192"></div>
+    </div>
+    <div class="field">
+      <label>address</label>
+      <input id="buyerAddress" placeholder="street address">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>city</label><input id="buyerCity" list="modalCityDatalist" placeholder="any city, e.g. dallas, tx" oninput="onModalCityInput(this)"></div>
+      <div class="field"><label>state</label><input id="buyerState" placeholder="tx" maxlength="2" style="text-transform:uppercase;"></div>
+    </div>
+    <datalist id="modalCityDatalist"></datalist>
+    <div class="field">
+      <label>status</label>
+      <select id="buyerStatus">
+        <option value="hot">hot lead</option>
+        <option value="warm">warm</option>
+        <option value="cold">cold</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>rating</label>
+      <div class="rating-row">
+        <input type="range" min="1" max="10" value="7" id="buyerRating" oninput="document.getElementById('ratingNum').textContent=this.value">
+        <div class="rating-num" id="ratingNum">7</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>this buyer</label>
+      <div class="flag-row">
+        <label class="flag-check"><input type="checkbox" id="buyerSawShowing"> saw the house</label>
+        <label class="flag-check"><input type="checkbox" id="buyerMadeOffer"> made an offer</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>favorite locations</label>
+      <input id="favInput" placeholder="type an area and press enter" onkeydown="if(event.key==='Enter'){event.preventDefault();addFavChip();}">
+      <div class="chip-list" id="favChipList"></div>
+    </div>
+    <div class="field">
+      <label>notes</label>
+      <textarea id="buyerNotes" rows="2" placeholder="notes"></textarea>
+    </div>
+    <div class="field">
+      <label>offers / deals made</label>
+      <div id="offerListEdit"></div>
+      <div class="field-row" style="margin-top:8px;">
+        <input id="offerLocation" placeholder="property / area">
+        <input id="offerAmount" placeholder="amount">
+      </div>
+      <div class="field-row" style="margin-top:8px;">
+        <input id="offerDate" type="date">
+        <input id="offerNotes" placeholder="notes">
+      </div>
+      <button class="btn ghost sm" style="margin-top:8px;" onclick="addOfferToEdit()">+ add this offer</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeBuyerModal()">cancel</button>
+      <button class="btn danger" id="buyerDeleteBtn" style="display:none;" onclick="deleteBuyerFromModal()">delete</button>
+      <button class="btn brick" onclick="saveBuyer()">save buyer</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="taskModalBg">
+  <div class="modal" style="max-width:460px;">
+    <h2 id="taskModalTitle">new task</h2>
+    <input type="hidden" id="taskId">
+    <div class="field"><label>task</label><input id="taskTitle" placeholder="task title"></div>
+    <div class="field-row">
+      <div class="field"><label>date</label><input type="date" id="taskDate"></div>
+      <div class="field"><label>time</label><input type="time" id="taskTime"></div>
+    </div>
+    <div class="field">
+      <label>related buyer</label>
+      <select id="taskBuyer"><option value="">none</option></select>
+    </div>
+    <div class="field"><label>notes</label><textarea id="taskNotes" rows="2"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeTaskModal()">cancel</button>
+      <button class="btn danger" id="taskDeleteBtn" style="display:none;" onclick="deleteTaskFromModal()">delete</button>
+      <button class="btn brick" onclick="saveTask()">save task</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<button id="voiceBubble" onclick="toggleVoiceMode()" title="محادثة صوتية مع جيمناي">🎙️</button>
+<button id="geminiBubble" onclick="toggleGeminiPanel()" title="ask gemini">✦</button>
+<div id="geminiPanel">
+  <div class="gp-head">
+    <div class="t">ask <span>gemini</span></div>
+    <button class="gp-close" onclick="toggleGeminiPanel()">✕</button>
+  </div>
+  <div id="aiKeyWarning"></div>
+  <div class="gp-log" id="aiLog"></div>
+  <div class="gp-input-row">
+    <textarea id="aiInput" placeholder="ask..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askGemini();}"></textarea>
+    <button class="btn brick sm" onclick="askGemini()">send</button>
+  </div>
+</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSy...",
+    authDomain: "hafez-3c500.firebaseapp.com",
+    projectId: "hafez-3c500",
+    storageBucket: "hafez-3c500.firebasestorage.app",
+    messagingSenderId: "123456789",
+    appId: "1:1234..."
+  };
+  const app = initializeApp(firebaseConfig);
+  window.db = getFirestore(app);
+  window.FirestoreModules = { collection, getDocs, setDoc, doc, deleteDoc };
+  if (typeof loadDataFromFirebase === 'function') {
+    loadDataFromFirebase();
+  }
+</script>
+<script>
+const US_CITIES = [
+  "Dallas, TX", "Houston, TX", "Austin, TX", "San Antonio, TX", "Fort Worth, TX", "El Paso, TX", "Arlington, TX", "Corpus Christi, TX", "Plano, TX", "Laredo, TX", "Lubbock, TX", "Garland, TX", "Irving, TX", "Amarillo, TX", "Grand Prairie, TX", "McKinney, TX", "Frisco, TX", "Brownsville, TX", "Pasadena, TX", "Killeen, TX", "Mesodon, TX", "Denton, TX", "Waco, TX", "Midland, TX", "Carrollton, TX", "Round Rock, TX", "Abilene, TX", "Pearland, TX", "College Station, TX", "Richardson, TX", "The Woodlands, TX", "Beaumont, TX", "Odessa, TX", "Tyler, TX", "Wichita Falls, TX", "Lewisville, TX", "League City, TX", "San Angelo, TX", "Allen, TX", "Sugar Land, TX", "Edinburg, TX", "Conroe, TX", "Mission, TX", "Longview, TX", "Bryan, TX", "Pharr, TX", "Baytown, TX", "Missouri City, TX", "Temple, TX", "Flower Mound, TX", "New Braunfels, TX", "North Richland Hills, TX", "Victoria, TX", "Harlingen, TX", "Pflugerville, TX", "Grapevine, TX", "DeSoto, TX", "Marfa, TX", "Muleshoe, TX",
+  "New York, NY", "Los Angeles, CA", "Chicago, IL", "Phoenix, AZ", "Philadelphia, PA", "San Diego, CA", "San Jose, CA", "Jacksonville, FL", "Columbus, OH", "Indianapolis, IN", "Charlotte, NC", "San Francisco, CA", "Seattle, WA", "Denver, CO", "Washington, DC", "Boston, MA", "Nashville, TN", "Detroit, MI", "Oklahoma City, OK", "Portland, OR", "Las Vegas, NV", "Memphis, TN", "Louisville, KY", "Baltimore, MD", "Milwaukee, WI", "Albuquerque, NM", "Tucson, AZ", "Fresno, CA", "Sacramento, CA", "Kansas City, MO", "Mesa, AZ", "Atlanta, GA", "Omaha, NE", "Colorado Springs, CO", "Raleigh, NC", "Miami, FL", "Long Beach, CA", "Virginia Beach, VA", "Oakland, CA", "Minneapolis, MN", "Tulsa, OK", "Tampa, FL", "New Orleans, LA"
+];
+
+const store = {
+  buyers: [],
+  tasks: []
+};
+
+async function loadDataFromFirebase() {
+  try {
+    if(!window.db || !window.FirestoreModules) return;
+    const { collection, getDocs } = window.FirestoreModules;
+    const buyersSnap = await getDocs(collection(window.db, 'buyers'));
+    store.buyers = buyersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const tasksSnap = await getDocs(collection(window.db, 'tasks'));
+    store.tasks = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderDashboard();
+    renderBuyers();
+    renderTasks();
+    populateCityDatalist();
+    renderCityResults();
+  } catch (e) {
+    console.error("error loading data: ", e);
+  }
+}
+if(window.db && window.FirestoreModules){
+  loadDataFromFirebase();
+}
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('page-'+item.dataset.page).classList.add('active');
+    if(item.dataset.page==='buyers') renderBuyers();
+    if(item.dataset.page==='tasks') renderTasks();
+    if(item.dataset.page==='dashboard') renderDashboard();
+    if(item.dataset.page==='offers') renderOffersTimeline();
+    if(item.dataset.page==='city') renderCityResults();
+    if(item.dataset.page==='settings') loadSettingsUI();
+  });
+});
+
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function fmtDate(d){ return d.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'}); }
+document.getElementById('todayDate').textContent = fmtDate(new Date());
+function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
+
+function populateCityDatalist(){
+  const dl = document.getElementById('cityDatalist');
+  const mdl = document.getElementById('modalCityDatalist');
+  const set = new Set(US_CITIES);
+  store.buyers.forEach(b=>{ if(b.city) set.add(b.city + (b.state? ', '+b.state : '')); });
+  const arr = Array.from(set).map(c=>`<option value="${esc(c)}">`).join('');
+  if(dl) dl.innerHTML = arr;
+  if(mdl) mdl.innerHTML = arr;
+}
+setTimeout(populateCityDatalist, 500);
+
+function onModalCityInput(inputEl){
+  const q = inputEl.value.toLowerCase().trim();
+  const mdl = document.getElementById('modalCityDatalist');
+  if(!mdl) return;
+  const set = new Set(US_CITIES);
+  store.buyers.forEach(b=>{ if(b.city) set.add(b.city + (b.state? ', '+b.state : '')); });
+  const matches = Array.from(set).filter(c => c.toLowerCase().includes(q));
+  mdl.innerHTML = matches.slice(0, 30).map(c=>`<option value="${esc(c)}">`).join('');
+}
+
+let editingFavs = [];
+let editingOffers = [];
+function openBuyerModal(buyerId){
+  document.getElementById('buyerModalBg').classList.add('show');
+  editingFavs = [];
+  editingOffers = [];
+  if(buyerId){
+    const b = store.buyers.find(x=>x.id===buyerId);
+    if(b){
+      document.getElementById('buyerModalTitle').textContent = 'edit buyer';
+      document.getElementById('buyerId').value = b.id;
+      document.getElementById('buyerName').value = b.name||'';
+      document.getElementById('buyerPhone').value = b.phone||'';
+      document.getElementById('buyerAddress').value = b.address||'';
+      document.getElementById('buyerCity').value = b.city||'';
+      document.getElementById('buyerState').value = b.state||'';
+      document.getElementById('buyerStatus').value = b.status||'hot';
+      document.getElementById('buyerRating').value = b.rating||7;
+      document.getElementById('ratingNum').textContent = b.rating||7;
+      document.getElementById('buyerSawShowing').checked = !!b.sawShowing;
+      document.getElementById('buyerMadeOffer').checked = !!b.madeOffer;
+      document.getElementById('buyerNotes').value = b.notes||'';
+      editingFavs = [...(b.favs||[])];
+      editingOffers = [...(b.offers||[])];
+      document.getElementById('buyerDeleteBtn').style.display = 'inline-flex';
+    }
+  } else {
+    document.getElementById('buyerModalTitle').textContent = 'add buyer';
+    document.getElementById('buyerId').value = '';
+    document.getElementById('buyerName').value = '';
+    document.getElementById('buyerPhone').value = '';
+    document.getElementById('buyerAddress').value = '';
+    document.getElementById('buyerCity').value = '';
+    document.getElementById('buyerState').value = '';
+    document.getElementById('buyerStatus').value = 'hot';
+    document.getElementById('buyerRating').value = 7;
+    document.getElementById('ratingNum').textContent = '7';
+    document.getElementById('buyerSawShowing').checked = false;
+    document.getElementById('buyerMadeOffer').checked = false;
+    document.getElementById('buyerNotes').value = '';
+    document.getElementById('buyerDeleteBtn').style.display = 'none';
+  }
+  renderFavChips();
+  renderOfferListEdit();
+}
+function closeBuyerModal(){ document.getElementById('buyerModalBg').classList.remove('show'); }
+function addFavChip(){
+  const inp = document.getElementById('favInput');
+  const val = inp.value.trim();
+  if(val && !editingFavs.includes(val)){ editingFavs.push(val); inp.value=''; renderFavChips(); }
+}
+function removeFavChip(idx){ editingFavs.splice(idx,1); renderFavChips(); }
+function renderFavChips(){
+  const list = document.getElementById('favChipList');
+  list.innerHTML = editingFavs.map((f,i)=>`<div class="chip">${esc(f)}<button onclick="removeFavChip(${i})">×</button></div>`).join('');
+}
+function addOfferToEdit(){
+  const loc = document.getElementById('offerLocation').value.trim();
+  const amt = document.getElementById('offerAmount').value.trim();
+  const dt = document.getElementById('offerDate').value;
+  const notes = document.getElementById('offerNotes').value.trim();
+  if(!loc || !amt) { toast('enter location and amount'); return; }
+  editingOffers.push({ id: uid(), location: loc, amount: amt, date: dt||todayStr(), notes: notes });
+  document.getElementById('offerLocation').value = '';
+  document.getElementById('offerAmount').value = '';
+  document.getElementById('offerDate').value = '';
+  document.getElementById('offerNotes').value = '';
+  renderOfferListEdit();
+}
+function removeOfferEdit(id){ editingOffers = editingOffers.filter(o=>o.id!==id); renderOfferListEdit(); }
+function renderOfferListEdit(){
+  const list = document.getElementById('offerListEdit');
+  if(!editingOffers.length){ list.innerHTML='<div style="font-size:12.5px;color:var(--ink-soft);">no offers added yet</div>'; return; }
+  list.innerHTML = editingOffers.map(o=>`
+    <div class="offer-item">
+      <div>
+        <div class="oline1">${esc(o.amount)} — ${esc(o.location)} (${esc(o.date)})</div>
+        ${o.notes? `<div class="onotes">${esc(o.notes)}</div>`:''}
+      </div>
+      <button onclick="removeOfferEdit('${o.id}')">×</button>
+    </div>
+  `).join('');
+}
+async function saveBuyer(){
+  const id = document.getElementById('buyerId').value || uid();
+  const name = document.getElementById('buyerName').value.trim();
+  if(!name){ toast('please enter a name'); return; }
+  const buyer = {
+    name: name,
+    phone: document.getElementById('buyerPhone').value.trim(),
+    address: document.getElementById('buyerAddress').value.trim(),
+    city: document.getElementById('buyerCity').value.trim(),
+    state: document.getElementById('buyerState').value.trim().toUpperCase(),
+    status: document.getElementById('buyerStatus').value,
+    rating: parseInt(document.getElementById('buyerRating').value)||7,
+    sawShowing: document.getElementById('buyerSawShowing').checked,
+    madeOffer: document.getElementById('buyerMadeOffer').checked,
+    favs: editingFavs,
+    notes: document.getElementById('buyerNotes').value.trim(),
+    offers: editingOffers,
+    updatedAt: new Date().toISOString()
+  };
+  const idx = store.buyers.findIndex(b=>b.id===id);
+  if(idx>=0) store.buyers[idx] = { id, ...buyer };
+  else store.buyers.push({ id, ...buyer });
+  try {
+    if(window.db && window.FirestoreModules){
+      const { doc, setDoc } = window.FirestoreModules;
+      await setDoc(doc(window.db, 'buyers', id), buyer);
+    }
+  } catch(e){ console.error('firebase save error:', e); }
+  closeBuyerModal();
+  renderDashboard();
+  renderBuyers();
+  populateCityDatalist();
+  renderCityResults();
+  toast('buyer saved successfully');
+}
+async function deleteBuyerFromModal(){
+  const id = document.getElementById('buyerId').value;
+  if(!id) return;
+  if(!confirm('delete this buyer?')) return;
+  store.buyers = store.buyers.filter(b=>b.id!==id);
+  try {
+    if(window.db && window.FirestoreModules){
+      const { doc, deleteDoc } = window.FirestoreModules;
+      await deleteDoc(doc(window.db, 'buyers', id));
+    }
+  } catch(e){ console.error('firebase delete error:', e); }
+  closeBuyerModal();
+  renderDashboard();
+  renderBuyers();
+  populateCityDatalist();
+  renderCityResults();
+  toast('buyer deleted');
+}
+function openTaskModal(taskId){
+  document.getElementById('taskModalBg').classList.add('show');
+  const sel = document.getElementById('taskBuyer');
+  sel.innerHTML = '<option value="">none</option>' + store.buyers.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
+  if(taskId){
+    const t = store.tasks.find(x=>x.id===taskId);
+    if(t){
+      document.getElementById('taskModalTitle').textContent = 'edit task';
+      document.getElementById('taskId').value = t.id;
+      document.getElementById('taskTitle').value = t.title||'';
+      document.getElementById('taskDate').value = t.dueDate||'';
+      document.getElementById('taskTime').value = t.dueTime||'';
+      document.getElementById('taskBuyer').value = t.buyerId||'';
+      document.getElementById('taskNotes').value = t.notes||'';
+      document.getElementById('taskDeleteBtn').style.display = 'inline-flex';
+    }
+  } else {
+    document.getElementById('taskModalTitle').textContent = 'new task';
+    document.getElementById('taskId').value = '';
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('taskDate').value = todayStr();
+    document.getElementById('taskTime').value = '';
+    document.getElementById('taskBuyer').value = '';
+    document.getElementById('taskNotes').value = '';
+    document.getElementById('taskDeleteBtn').style.display = 'none';
+  }
+}
+function closeTaskModal(){ document.getElementById('taskModalBg').classList.remove('show'); }
+async function saveTask(){
+  const id = document.getElementById('taskId').value || uid();
+  const title = document.getElementById('taskTitle').value.trim();
+  if(!title){ toast('please enter task title'); return; }
+  const task = {
+    title: title,
+    dueDate: document.getElementById('taskDate').value || todayStr(),
+    dueTime: document.getElementById('taskTime').value,
+    buyerId: document.getElementById('taskBuyer').value,
+    notes: document.getElementById('taskNotes').value.trim(),
+    done: false,
+    updatedAt: new Date().toISOString()
+  };
+  const idx = store.tasks.findIndex(t=>t.id===id);
+  if(idx>=0) task.done = store.tasks[idx].done;
+  if(idx>=0) store.tasks[idx] = { id, ...task };
+  else store.tasks.push({ id, ...task });
+  try {
+    if(window.db && window.FirestoreModules){
+      const { doc, setDoc } = window.FirestoreModules;
+      await setDoc(doc(window.db, 'tasks', id), task);
+    }
+  } catch(e){ console.error('firebase task save error:', e); }
+  closeTaskModal();
+  renderDashboard();
+  renderTasks();
+  toast('task saved');
+}
+async function toggleTaskDone(id){
+  const t = store.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.done = !t.done;
+  try {
+    if(window.db && window.FirestoreModules){
+      const { doc, setDoc } = window.FirestoreModules;
+      await setDoc(doc(window.db, 'tasks', id), t, { merge: true });
+    }
+  } catch(e){}
+  renderDashboard();
+  renderTasks();
+}
+async function deleteTaskFromModal(){
+  const id = document.getElementById('taskId').value;
+  if(!id) return;
+  store.tasks = store.tasks.filter(t=>t.id!==id);
+  try {
+    if(window.db && window.FirestoreModules){
+      const { doc, deleteDoc } = window.FirestoreModules;
+      await deleteDoc(doc(window.db, 'tasks', id));
+    }
+  } catch(e){}
+  closeTaskModal();
+  renderDashboard();
+  renderTasks();
+  toast('task deleted');
+}
+function renderBuyers(){
+  const q = (document.getElementById('buyerSearch')?.value || '').toLowerCase();
+  const list = document.getElementById('buyerList');
+  const filtered = store.buyers.filter(b=>{
+    const txt = (b.name + ' ' + (b.city||'') + ' ' + (b.state||'') + ' ' + (b.address||'')).toLowerCase();
+    return txt.includes(q);
+  });
+  if(!filtered.length){
+    list.innerHTML = '<div class="empty">no buyers found</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(b=>`
+    <div class="buyer-row">
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="buyer-name">${esc(b.name)}</span>
+          <span class="badge ${b.status}">${b.status}</span>
+          <span class="badge flag">★ ${b.rating}/10</span>
+        </div>
+        <div class="buyer-sub">${esc(b.phone||'no phone')} — ${esc(b.city||'no city')}, ${esc(b.state||'')}</div>
+      </div>
+      <div class="buyer-actions">
+        <button class="btn ghost sm" onclick="openBuyerModal('${b.id}')">edit</button>
+      </div>
+    </div>
+  `).join('');
+}
+function renderTasks(){
+  const list = document.getElementById('taskList');
+  if(!store.tasks.length){ list.innerHTML='<div class="empty">no tasks yet</div>'; return; }
+  list.innerHTML = store.tasks.map(t=>`
+    <div class="task-row">
+      <div class="task-check ${t.done?'done':''}" onclick="toggleTaskDone('${t.id}')"></div>
+      <div class="task-body">
+        <div class="task-title ${t.done?'done':''}">${esc(t.title)}</div>
+        <div class="task-meta">${esc(t.dueDate)} ${t.dueTime? 'at '+esc(t.dueTime):''}</div>
+      </div>
+      <button class="btn ghost sm" onclick="openTaskModal('${t.id}')">edit</button>
+    </div>
+  `).join('');
+}
+function renderDashboard(){
+  document.getElementById('statBuyers').textContent = store.buyers.length;
+  document.getElementById('statHot').textContent = store.buyers.filter(b=>b.status==='hot').length;
+  const today = todayStr();
+  const dueToday = store.tasks.filter(t=>!t.done && t.dueDate===today);
+  document.getElementById('statTasksToday').textContent = dueToday.length;
+  const overdue = store.tasks.filter(t=>!t.done && t.dueDate && t.dueDate < today);
+  const relevant = [...overdue, ...dueToday];
+  const dashTaskList = document.getElementById('dashTaskList');
+  if(!relevant.length){
+    dashTaskList.innerHTML = '<div class="empty">no tasks due today</div>';
+  } else {
+    dashTaskList.innerHTML = relevant.slice(0,5).map(t=>`
+      <div class="task-row">
+        <div class="task-check ${t.done?'done':''}" onclick="toggleTaskDone('${t.id}')"></div>
+        <div class="task-body">
+          <div class="task-title">${esc(t.title)}</div>
+          <div class="task-meta">${esc(t.dueDate)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  const hotList = store.buyers.filter(b=>b.status==='hot');
+  const dashHotList = document.getElementById('dashHotList');
+  if(!hotList.length){
+    dashHotList.innerHTML = '<div class="empty">no hot leads</div>';
+  } else {
+    dashHotList.innerHTML = hotList.slice(0,5).map(b=>`
+      <div class="buyer-row">
+        <div style="flex:1;">
+          <div class="buyer-name">${esc(b.name)}</div>
+          <div class="buyer-sub">${esc(b.city||'')}, ${esc(b.state||'')}</div>
+        </div>
+        <button class="btn ghost sm" onclick="openBuyerModal('${b.id}')">view</button>
+      </div>
+    `).join('');
+  }
+}
+function renderOffersTimeline(){
+  const container = document.getElementById('offersTimeline');
+  let allOffers = [];
+  store.buyers.forEach(b=>{
+    if(b.offers){
+      b.offers.forEach(o=>{
+        allOffers.push({ ...o, buyerName: b.name, buyerId: b.id });
+      });
+    }
+  });
+  if(!allOffers.length){
+    container.innerHTML = '<div class="card"><div class="empty">no offers recorded yet</div></div>';
+    return;
+  }
+  allOffers.sort((a,b)=>b.date.localeCompare(a.date));
+  container.innerHTML = `
+    <div class="card">
+      ${allOffers.map(o=>`
+        <div class="buyer-row">
+          <div>
+            <div style="font-weight:700; font-size:15px;">${esc(o.amount)} —${esc(o.location)}</div>
+            <div class="buyer-sub">buyer: ${esc(o.buyerName)} \vert{} date:${esc(o.date)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+function renderCityResults(){
+  const q = (document.getElementById('citySearch')?.value || '').toLowerCase().trim();
+  const container = document.getElementById('cityResults');
+  if(!container) return;
+
+  const matchedBuyers = store.buyers.filter(b=>{
+    const c = (b.city||'').toLowerCase();
+    const s = (b.state||'').toLowerCase();
+    const full = (c + ', ' + s);
+    return q === '' || c.includes(q) || s.includes(q) || full.includes(q);
+  });
+
+  const matchedCitiesFromList = US_CITIES.filter(item => q === '' || item.toLowerCase().includes(q));
+
+  let html = '';
+  if(q !== ''){
+    html += `<div style="padding:12px 16px; font-weight:600; color:var(--teal);">suggested cities matching "${esc(q)}":</div>`;
+    html += `<div style="padding:0 16px 12px; display:flex; flex-wrap:wrap; gap:6px;">`;
+    matchedCitiesFromList.slice(0, 15).forEach(cityStr => {
+      html += `<span class="chip" style="cursor:pointer;" onclick="document.getElementById('citySearch').value='${cityStr}'; renderCityResults();">${esc(cityStr)}</span>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div style="border-top:1px solid var(--line); padding-top:12px;">`;
+  if(!matchedBuyers.length){
+    html += `<div class="empty">no buyers found matching this city or state search</div>`;
+  } else {
+    html += matchedBuyers.map(b=>`
+      <div class="buyer-row">
+        <div style="flex:1;">
+          <div class="buyer-name">${esc(b.name)}</div>
+          <div class="buyer-sub">${esc(b.city)}, ${esc(b.state)} — phone: ${esc(b.phone||'none')}</div>
+        </div>
+        <button class="btn ghost sm" onclick="openBuyerModal('${b.id}')">view</button>
+      </div>
+    `).join('');
+  }
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if(btn) btn.textContent = theme==='dark' ? '☀️ light mode' : '🌙 dark mode';
+}
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', next);
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem('theme') || 'light');
+
+const GEMINI_TOOLS = [{
+  functionDeclarations: [
+    {
+      name: "add_buyer",
+      description: "Add a new buyer to the CRM",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          name: { type: "STRING" },
+          phone: { type: "STRING" },
+          address: { type: "STRING" },
+          city: { type: "STRING" },
+          state: { type: "STRING" },
+          status: { type: "STRING", enum: ["hot", "warm", "cold"] },
+          rating: { type: "NUMBER", description: "1 to 10" },
+          notes: { type: "STRING" }
+        },
+        required: ["name"]
+      }
+    },
+    {
+      name: "update_buyer",
+      description: "Update fields on an existing buyer, identified by id",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          id: { type: "STRING" },
+          name: { type: "STRING" },
+          phone: { type: "STRING" },
+          address: { type: "STRING" },
+          city: { type: "STRING" },
+          state: { type: "STRING" },
+          status: { type: "STRING", enum: ["hot", "warm", "cold"] },
+          rating: { type: "NUMBER" },
+          notes: { type: "STRING" }
+        },
+        required: ["id"]
+      }
+    },
+    {
+      name: "delete_buyer",
+      description: "Delete a buyer by id",
+      parameters: { type: "OBJECT", properties: { id: { type: "STRING" } }, required: ["id"] }
+    },
+    {
+      name: "add_task",
+      description: "Add a new task/reminder, optionally linked to a buyer id",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          title: { type: "STRING" },
+          dueDate: { type: "STRING", description: "YYYY-MM-DD, defaults to today" },
+          dueTime: { type: "STRING", description: "HH:MM 24h, optional" },
+          buyerId: { type: "STRING" },
+          notes: { type: "STRING" }
+        },
+        required: ["title"]
+      }
+    },
+    {
+      name: "toggle_task_done",
+      description: "Toggle a task's done status by id",
+      parameters: { type: "OBJECT", properties: { id: { type: "STRING" } }, required: ["id"] }
+    },
+    {
+      name: "delete_task",
+      description: "Delete a task by id",
+      parameters: { type: "OBJECT", properties: { id: { type: "STRING" } }, required: ["id"] }
+    }
+  ]
+}];
+
+async function callGeminiFunction(name, args){
+  args = args || {};
+  try{
+    if(name === 'add_buyer'){
+      const id = uid();
+      const buyer = {
+        name: args.name || 'unnamed',
+        phone: args.phone || '',
+        address: args.address || '',
+        city: args.city || '',
+        state: (args.state||'').toUpperCase(),
+        status: args.status || 'warm',
+        rating: args.rating || 7,
+        sawShowing: false,
+        madeOffer: false,
+        favs: [],
+        notes: args.notes || '',
+        offers: [],
+        updatedAt: new Date().toISOString()
+      };
+      store.buyers.push({ id, ...buyer });
+      if(window.db && window.FirestoreModules){
+        const { doc, setDoc } = window.FirestoreModules;
+        await setDoc(doc(window.db, 'buyers', id), buyer);
+      }
+      renderDashboard(); renderBuyers(); populateCityDatalist(); renderCityResults();
+      return { success:true, id, message:`added buyer ${buyer.name}` };
+    }
+    if(name === 'update_buyer'){
+      const b = store.buyers.find(x=>x.id===args.id);
+      if(!b) return { success:false, error:'buyer not found' };
+      ['name','status','rating','notes','phone','city','state','address'].forEach(k=>{
+        if(args[k]!==undefined) b[k]=args[k];
+      });
+      b.updatedAt = new Date().toISOString();
+      if(window.db && window.FirestoreModules){
+        const { doc, setDoc } = window.FirestoreModules;
+        const { id, ...rest } = b;
+        await setDoc(doc(window.db, 'buyers', id), rest, { merge:true });
+      }
+      renderDashboard(); renderBuyers(); populateCityDatalist(); renderCityResults();
+      return { success:true, message:`updated buyer ${b.name}` };
+    }
+    if(name === 'delete_buyer'){
+      const b = store.buyers.find(x=>x.id===args.id);
+      if(!b) return { success:false, error:'buyer not found' };
+      store.buyers = store.buyers.filter(x=>x.id!==args.id);
+      if(window.db && window.FirestoreModules){
+        const { doc, deleteDoc } = window.FirestoreModules;
+        await deleteDoc(doc(window.db, 'buyers', args.id));
+      }
+      renderDashboard(); renderBuyers(); populateCityDatalist(); renderCityResults();
+      return { success:true, message:`deleted buyer ${b.name}` };
+    }
+    if(name === 'add_task'){
+      const id = uid();
+      const task = {
+        title: args.title,
+        dueDate: args.dueDate || todayStr(),
+        dueTime: args.dueTime || '',
+        buyerId: args.buyerId || '',
+        notes: args.notes || '',
+        done:false,
+        updatedAt: new Date().toISOString()
+      };
+      store.tasks.push({ id, ...task });
+      if(window.db && window.FirestoreModules){
+        const { doc, setDoc } = window.FirestoreModules;
+        await setDoc(doc(window.db, 'tasks', id), task);
+      }
+      renderDashboard(); renderTasks();
+      return { success:true, id, message:`added task ${task.title}` };
+    }
+    if(name === 'toggle_task_done'){
+      const t = store.tasks.find(x=>x.id===args.id);
+      if(!t) return { success:false, error:'task not found' };
+      t.done = !t.done;
+      if(window.db && window.FirestoreModules){
+        const { doc, setDoc } = window.FirestoreModules;
+        await setDoc(doc(window.db, 'tasks', t.id), t, { merge:true });
+      }
+      renderDashboard(); renderTasks();
+      return { success:true, message:`task ${t.title} now ${t.done?'done':'not done'}` };
+    }
+    if(name === 'delete_task'){
+      const t = store.tasks.find(x=>x.id===args.id);
+      if(!t) return { success:false, error:'task not found' };
+      store.tasks = store.tasks.filter(x=>x.id!==args.id);
+      if(window.db && window.FirestoreModules){
+        const { doc, deleteDoc } = window.FirestoreModules;
+        await deleteDoc(doc(window.db, 'tasks', args.id));
+      }
+      renderDashboard(); renderTasks();
+      return { success:true, message:`deleted task ${t.title}` };
+    }
+    return { success:false, error:'unknown function '+name };
+  } catch(e){
+    return { success:false, error:String(e) };
+  }
+}
+
+// ---------- task notifications ----------
+function getNotifiedSet(){
+  try{ return new Set(JSON.parse(localStorage.getItem('notifiedTaskIds')||'[]')); }
+  catch(e){ return new Set(); }
+}
+function saveNotifiedSet(set){
+  localStorage.setItem('notifiedTaskIds', JSON.stringify(Array.from(set)));
+}
+function checkDueTasks(){
+  if(typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const notified = getNotifiedSet();
+  let changed = false;
+  store.tasks.forEach(t=>{
+    if(t.done || !t.dueDate) return;
+    if(notified.has(t.id)) return;
+    const timePart = t.dueTime || '09:00';
+    const due = new Date(t.dueDate + 'T' + timePart + ':00');
+    if(!isNaN(due.getTime()) && due <= now){
+      try{
+        const n = new Notification('dealbook — task due', {
+          body: t.title + (t.notes ? ' — ' + t.notes : ''),
+          tag: 'task-' + t.id
+        });
+        n.onclick = ()=>{ window.focus(); };
+      }catch(e){ console.error('notification error', e); }
+      notified.add(t.id);
+      changed = true;
+    }
+  });
+  if(changed) saveNotifiedSet(notified);
+}
+let taskNotifInterval = null;
+function startTaskNotificationChecks(){
+  if(taskNotifInterval) return;
+  checkDueTasks();
+  taskNotifInterval = setInterval(checkDueTasks, 30000);
+}
+function enableTaskNotifications(){
+  if(typeof Notification === 'undefined'){
+    document.getElementById('notifStatusNote').textContent = 'المتصفح ده مش بيدعم الإشعارات';
+    return;
+  }
+  Notification.requestPermission().then(perm=>{
+    const note = document.getElementById('notifStatusNote');
+    if(perm === 'granted'){
+      note.textContent = 'الإشعارات مفعّلة ✓';
+      startTaskNotificationChecks();
+    } else {
+      note.textContent = 'تم رفض إذن الإشعارات';
+    }
+  });
+}
+if(typeof Notification !== 'undefined' && Notification.permission === 'granted'){
+  startTaskNotificationChecks();
+}
+
+// ---------- voice chat (speech-to-text + text-to-speech), same tool access as text chat ----------
+let recognition = null;
+let voiceModeOn = false;
+let isSpeaking = false;
+
+function setupRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return null;
+  const r = new SR();
+  r.lang = 'ar-EG';
+  r.continuous = false;
+  r.interimResults = false;
+  r.onresult = (e)=>{
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('aiInput').value = transcript;
+    askGemini(transcript);
+  };
+  r.onerror = (e)=>{
+    console.error('speech recognition error', e.error);
+    if(voiceModeOn && e.error !== 'not-allowed'){
+      setTimeout(()=>{ if(voiceModeOn) startListening(); }, 1200);
+    } else if(e.error === 'not-allowed'){
+      toast('محتاج إذن المايك عشان الصوت يشتغل');
+      voiceModeOn = false;
+      updateVoiceUI();
+    }
+  };
+  r.onend = ()=>{
+    if(voiceModeOn && !isSpeaking){
+      setTimeout(()=>{ if(voiceModeOn) startListening(); }, 400);
+    }
+  };
+  return r;
+}
+function startListening(){
+  if(!recognition) recognition = setupRecognition();
+  if(!recognition){ toast('المتصفح ده مش بيدعم التعرف على الصوت'); voiceModeOn = false; updateVoiceUI(); return; }
+  try{ recognition.start(); }catch(e){}
+}
+function stopListening(){
+  if(recognition){ try{ recognition.stop(); }catch(e){} }
+}
+function updateVoiceUI(){
+  const bubble = document.getElementById('voiceBubble');
+  if(voiceModeOn) bubble.classList.add('on'); else bubble.classList.remove('on');
+}
+function toggleVoiceMode(){
+  voiceModeOn = !voiceModeOn;
+  updateVoiceUI();
+  if(voiceModeOn){
+    document.getElementById('geminiPanel').classList.add('show');
+    checkAiKey();
+    startListening();
+  } else {
+    stopListening();
+    if('speechSynthesis' in window) speechSynthesis.cancel();
+    isSpeaking = false;
+  }
+}
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  isSpeaking = true;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ar-EG';
+  u.onend = ()=>{
+    isSpeaking = false;
+    if(voiceModeOn) startListening();
+  };
+  u.onerror = ()=>{
+    isSpeaking = false;
+    if(voiceModeOn) startListening();
+  };
+  speechSynthesis.speak(u);
+}
+
+function toggleGeminiPanel(){
+  const p = document.getElementById('geminiPanel');
+  p.classList.toggle('show');
+  checkAiKey();
+}
+function checkAiKey(){
+  const key = localStorage.getItem('geminiKey');
+  const warn = document.getElementById('aiKeyWarning');
+  if(!key){
+    warn.innerHTML = '<div class="gp-keywarning">please enter your gemini api key in settings first</div>';
+  } else {
+    warn.innerHTML = '';
+  }
+}
+async function askGemini(voiceText){
+  let key = localStorage.getItem('geminiKey') || document.getElementById('geminiKeyInput')?.value?.trim();
+  const input = document.getElementById('aiInput');
+  const log = document.getElementById('aiLog');
+  const q = (typeof voiceText === 'string' ? voiceText : input.value).trim();
+  if(!q) return;
+  if(!key){
+    log.innerHTML += '<div class="ai-msg err">please set your gemini api key in settings</div>';
+    if(voiceModeOn) speak('محتاج تحط مفتاح جيمناي الأول من الإعدادات');
+    return;
+  }
+  log.innerHTML += '<div class="ai-msg user">'+esc(q)+'</div>';
+  input.value = '';
+  log.scrollTop = log.scrollHeight;
+
+  const systemText = "you are an assistant for a real estate wholesaling crm called dealbook. " +
+    "you have full access to read AND modify the data through the tools provided (add/update/delete buyers and tasks) — always call the right tool to actually make a change the user asks for, don't just describe it, then confirm briefly in plain text what you did. " +
+    "current buyers (with their ids): " + JSON.stringify(store.buyers) + ". current tasks (with their ids): " + JSON.stringify(store.tasks) + ". " +
+    "today's date is " + todayStr() + ". user message: " + q;
+
+  let contents = [{ role: 'user', parts: [{ text: systemText }] }];
+
+  try {
+    for(let turn=0; turn<6; turn++){
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ contents, tools: GEMINI_TOOLS })
+      });
+      const data = await res.json();
+      if(data.error){
+        log.innerHTML += '<div class="ai-msg err">api error: '+esc(data.error.message)+'</div>';
+        if(voiceModeOn) speak('حصل خطأ من جيمناي، تأكد من صحة المفتاح');
+        break;
+      }
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const functionCalls = parts.filter(p=>p.functionCall);
+      if(functionCalls.length){
+        contents.push({ role:'model', parts });
+        const responseParts = [];
+        for(const fc of functionCalls){
+          const result = await callGeminiFunction(fc.functionCall.name, fc.functionCall.args);
+          responseParts.push({ functionResponse: { name: fc.functionCall.name, response: result } });
+        }
+        contents.push({ role:'user', parts: responseParts });
+        continue;
+      }
+      const text = parts.map(p=>p.text).filter(Boolean).join('\n') || 'no response';
+      log.innerHTML += '<div class="ai-msg ai">'+esc(text)+'</div>';
+      if(voiceModeOn) speak(text);
+      break;
+    }
+  } catch(e) {
+    log.innerHTML += '<div class="ai-msg err">network error calling gemini api</div>';
+    if(voiceModeOn) speak('حصل خطأ في الاتصال بجيمناي');
+  }
+  log.scrollTop = log.scrollHeight;
+}
+function saveGeminiKey(){
+  const k = document.getElementById('geminiKeyInput').value.trim();
+  if(k){
+    localStorage.setItem('geminiKey', k);
+    document.getElementById('keySavedNote').textContent = 'saved';
+    setTimeout(()=>document.getElementById('keySavedNote').textContent='', 2000);
+    checkAiKey();
+  }
+}
+async function testGeminiKey(){
+  const k = document.getElementById('geminiKeyInput').value.trim() || localStorage.getItem('geminiKey');
+  if(!k){ alert('enter a key first'); return; }
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${k}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ contents: [{ parts: [{ text: 'hello' }] }] })
+    });
+    const data = await res.json();
+    if(res.ok && !data.error) alert('connection successful');
+    else alert('connection failed: ' + (data.error?.message || 'check your key'));
+  } catch(e) { alert('error testing key'); }
+}
+function loadSettingsUI(){
+  const keyVal = localStorage.getItem('geminiKey');
+  if(keyVal) {
+    document.getElementById('geminiKeyInput').value = keyVal;
+  }
+  checkAiKey();
+}
+loadSettingsUI();
+</script>
+</body>
+</html>
