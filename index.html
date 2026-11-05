@@ -42,11 +42,12 @@ label{display:block;font-size:12.5px;font-weight:600;color:var(--soft);margin-bo
 .lc .n{font-weight:700}.lc textarea{margin-top:7px;font-size:12.5px;min-height:34px;resize:vertical}
 .call{display:flex;gap:8px;align-items:center;margin-top:7px;font-size:12px;color:var(--soft)}
 .call button{background:var(--call);color:var(--calltext);border:0;border-radius:5px;padding:4px 9px;font-weight:700;font-size:12px}
-.ni{margin-top:16px;padding:16px;border:2px dashed var(--line);border-radius:8px;text-align:center;cursor:pointer;font-weight:700;color:var(--ink)}
+.ni{margin:0 0 14px;width:150px;min-height:100px;padding:10px;border:2px dashed var(--line);border-radius:10px;text-align:center;cursor:pointer;font-weight:700;font-size:13px;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.chb{background:none;border:0;color:inherit;opacity:.5;cursor:pointer;font-size:13px;padding:0 3px;line-height:1}.chb:hover{opacity:1}
 .ni.over{outline:3px solid var(--brick)}
 .chip{display:inline-block;background:var(--tsoft);color:var(--teal);padding:3px 10px;border-radius:20px;font-size:12.5px;margin:3px 3px 0 0;cursor:pointer}
 .tpl{padding:14px 16px;width:310px;flex-shrink:0}.tpl .th{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}.tpl .th input{font-weight:700;font-size:15px;flex:1 1 100%}
-.ti{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}.ti textarea{min-height:56px}
+.ti{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}.ti textarea{min-height:56px;resize:none;overflow:hidden}
 .cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .cg div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;font-size:14px}
 .cg input{width:44px;height:30px;padding:0;border:0;background:none}
@@ -71,8 +72,8 @@ label{display:block;font-size:12.5px;font-weight:600;color:var(--soft);margin-bo
 <div class="grid3"><div class="card stat"><b id="sB">0</b><span>buyers tracked</span></div><div class="card stat"><b id="sH">0</b><span>hot leads</span></div><div class="card stat"><b id="sT">0</b><span>tasks due today</span></div></div>
 <div class="grid2"><div class="card" style="padding:16px"><b>today and overdue tasks</b><div id="dT"></div></div><div class="card" style="padding:16px"><b>hot leads</b><div id="dH"></div></div></div></div>
 <div class="page" id="p-buyers"><div class="head"><div><h1>buyers</h1><p>every buyer, their rating and offers</p></div><button class="btn b" onclick="buyerModal()">+ add buyer</button></div><div class="f"><input id="bq" placeholder="search name, city, state, address..." oninput="rBuyers()"></div><div class="card" id="bList"></div></div>
-<div class="page" id="p-leads"><div class="head"><div><h1>leads</h1><p>drag a card between stages. drop on Not Interested to move it down</p></div><button class="btn b" onclick="buyerModal()">+ add buyer</button></div><div class="board" id="board"></div>
-<div class="ni" id="niZone" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="dropTo(event,'not_interested');this.classList.remove('over')" onclick="go('notint')"></div></div>
+<div class="page" id="p-leads"><div class="head"><div><h1>leads</h1><p>drag a card between columns. drop it on the Not Interested box to move it there</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn g" onclick="addStage()">+ add column</button><button class="btn b" onclick="buyerModal()">+ add buyer</button></div></div>
+<div class="ni" id="niZone" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="dropTo(event,'not_interested');this.classList.remove('over')" onclick="go('notint')"></div><div class="board" id="board"></div></div>
 <div class="page" id="p-wh"><div class="head"><div><h1>wholesalers</h1><p>drag a card across the pipeline, just like leads</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn g s" style="display:inline-block;margin:0;cursor:pointer;color:var(--ink)">upload csv (bulk add)<input type="file" accept=".csv" style="display:none" onchange="csvImport('wh',this.files[0]);this.value=''"></label><button class="btn b s" onclick="whModal()">+ add wholesaler</button></div></div><div class="board" id="whBoard"></div></div>
 <div class="page" id="p-dispo"><div class="head"><div><h1>dispo deals</h1><p>each card is one property. click to open, see interested buyers, upload photos</p></div><button class="btn b s" onclick="dpModal()">+ add deal</button></div><div class="dg" id="dpGrid"></div></div>
 <div class="page" id="p-aq"><div class="head"><div><h1>acquisition</h1><p>seller leads pipeline. upload photos and call recordings</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn g s" style="display:inline-block;margin:0;cursor:pointer;color:var(--ink)">upload csv (bulk add)<input type="file" accept=".csv" style="display:none" onchange="csvImport('aq',this.files[0]);this.value=''"></label><button class="btn b s" onclick="aqModal()">+ add lead</button></div></div><div class="board" id="aqBoard"></div></div>
@@ -146,11 +147,22 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
-const STAGES=[['new','New Lead'],['voicemail','Voicemail'],['follow_up','Follow Up']];
+const DEFAULT_STAGES=[{id:'new',name:'New Lead',order:0},{id:'voicemail',name:'Voicemail',order:1},{id:'follow_up',name:'Follow Up',order:2}];
+const ST=()=>S.stages.length?[...S.stages].sort((a,b)=>(a.order||0)-(b.order||0)):DEFAULT_STAGES;
+const firstSt=()=>ST()[0].id;
+const stName=id=>id==='not_interested'?'Not Interested':((ST().find(x=>x.id===id)||{}).name||id);
+const resolveSt=v=>{const q=String(v||'').trim().toLowerCase();if(q==='not_interested'||q==='not interested')return 'not_interested';const f=ST().find(x=>x.id.toLowerCase()===q||x.name.trim().toLowerCase()===q);return f?f.id:firstSt()};
+const stMat=()=>{if(!S.stages.length)S.stages=DEFAULT_STAGES.map(x=>({...x}))};
+function fillStSel(){$('bStage').innerHTML=ST().concat([{id:'not_interested',name:'Not Interested'}]).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}
+function addStage(){ask('new column name','',n=>{n=n.trim();if(!n)return;stMat();S.stages.push({id:'c_'+uid(),name:n,order:Math.max(-1,...S.stages.map(x=>x.order||0))+1});save();renderAll();toast('column added')})}
+function renStage(id){const c=ST().find(x=>x.id===id);if(!c)return;ask('column name',c.name,n=>{n=n.trim();if(!n)return;stMat();S.stages.find(x=>x.id===id).name=n;save();renderAll()})}
+function delStage(id){const L=ST(),c=L.find(x=>x.id===id);if(!c)return;if(L.length<2)return toast('keep at least one column');
+const to=L.find(x=>x.id!==id),n=S.buyers.filter(b=>b.isLead!==false&&(b.leadStage||'new')===id).length;
+sure('delete the column "'+c.name+'"?'+(n?' its '+n+' lead(s) will move to "'+to.name+'"':''),()=>{stMat();S.buyers.forEach(b=>{if((b.leadStage||'new')===id){b.leadStage=to.id;lg(b,'column deleted, moved to '+to.name)}});S.stages=S.stages.filter(x=>x.id!==id);save();renderAll()})}
 const LIGHT={paper:'#f3eee2',card:'#fbf8f1',ink:'#211d18',side:'#211d18',sidetext:'#efe8d8',brick:'#a8402a',teal:'#2f4b3c',gold:'#b8893c',st_new:'#f7edc4',st_voicemail:'#d9e6f2',st_follow_up:'#dcefdc',st_not_interested:'#f4dcd6',st_interested:'#dcefdc',st_callback:'#e8dcf2',hot:'#f4e2dc',warm:'#f2e6c9',cold:'#e2e9e2',call:'#dfe8e0',calltext:'#2f4b3c',deal:'#dcefdc',eco:'#dfe8f2'};
 const DARK={paper:'#14130f',card:'#1e1c16',ink:'#f1ead9',side:'#0f0e0a',sidetext:'#efe8d8',brick:'#d16a4e',teal:'#7ab894',gold:'#e0ac5f',st_new:'#3a3320',st_voicemail:'#1f2c38',st_follow_up:'#1f3324',st_not_interested:'#3a241d',st_interested:'#1f3324',st_callback:'#2c1f38',hot:'#3d241b',warm:'#372c17',cold:'#1c2925',call:'#20302a',calltext:'#7ab894',deal:'#1f3324',eco:'#1f2c38'};
 const LABELS={paper:'main screen background',card:'cards and boxes',ink:'text',side:'sidebar background',sidetext:'sidebar text',brick:'main buttons (accent)',teal:'secondary accent',gold:'highlight',st_new:'New Lead column',st_voicemail:'Voicemail column',st_follow_up:'Follow Up column',st_not_interested:'Not Interested box',st_interested:'Interested column',st_callback:'Callback column',hot:'hot badge',warm:'warm badge',cold:'cold badge',call:'call log button',calltext:'call log button text',deal:'closed deals boxes',eco:'ECO deals headers'};
-const blank=()=>({buyers:[],tasks:[],wholesalers:[],acq:[],dispo:[],closed:[],eco:[],tpl:[],cc:{}});
+const blank=()=>({buyers:[],tasks:[],wholesalers:[],acq:[],dispo:[],closed:[],eco:[],tpl:[],stages:[],cc:{}});
 let S=blank(),C={...((localStorage.getItem('theme')==='dark'||(localStorage.getItem('theme')==null&&matchMedia('(prefers-color-scheme: dark)').matches))?DARK:LIGHT)};
 try{const c=localStorage.getItem('hafez_colors');if(c)C={...C,...JSON.parse(c)}}catch(e){}
 const save=()=>{if(typeof cloudDirty==='function')cloudDirty()};
@@ -190,10 +202,10 @@ function delTask(){S.tasks=S.tasks.filter(x=>x.id!==$('tId').value);save();cl('t
 
 /* buyers */
 let eo=[];
-$('bStage').innerHTML=STAGES.concat([['not_interested','Not Interested']]).map(s=>`<option value="${s[0]}">${s[1]}</option>`).join('');
+fillStSel();
 function buyerModal(id){const b=S.buyers.find(x=>x.id===id);eo=b?[...(b.offers||[])]:[];$('bmT').textContent=b?'edit buyer':'add buyer';$('bId').value=b?b.id:'';
 $('bName').value=b?b.name:'';$('bPhone').value=b?b.phone||'':'';$('bAddr').value=b?b.address||'':'';$('bCity').value=b?b.city||'':'';$('bState').value=b?b.state||'':'';
-$('bStatus').value=b?b.status:'hot';$('bShow').checked=!!(b&&b.showing);$('bPShow').checked=!!(b&&b.pShowing);$('bOff').checked=!!(b&&b.offerMade);$('bPOff').checked=!!(b&&b.pOffer);$('bRate').value=b?b.rating:7;$('bLead').checked=b?b.isLead!==false:true;$('bStage').value=b?b.leadStage||'new':'new';$('bNotes').value=b?b.notes||'':'';$('bDel').style.display=b?'inline-block':'none';rEO();op('bm')}
+$('bStatus').value=b?b.status:'hot';$('bShow').checked=!!(b&&b.showing);$('bPShow').checked=!!(b&&b.pShowing);$('bOff').checked=!!(b&&b.offerMade);$('bPOff').checked=!!(b&&b.pOffer);$('bRate').value=b?b.rating:7;$('bLead').checked=b?b.isLead!==false:true;fillStSel();$('bStage').value=b?(b.leadStage||firstSt()):firstSt();if(!$('bStage').value)$('bStage').value=firstSt();$('bNotes').value=b?b.notes||'':'';$('bDel').style.display=b?'inline-block':'none';rEO();op('bm')}
 function rEO(){$('bOffers').innerHTML=eo.length?eo.map((o,i)=>`<div class="row" style="padding:6px 0"><div style="flex:1" class="sub">${esc(o.amount)} - ${esc(o.location)} (${esc(o.date)})</div><button class="btn d s" onclick="eo.splice(${i},1);rEO()">x</button></div>`).join(''):'<div class="sub">no offers added</div>'}
 function addOffer(){const l=$('oLoc').value.trim(),a=$('oAmt').value.trim();if(!l||!a)return toast('enter place and amount');eo.push({location:l,amount:a,date:today()});$('oLoc').value=$('oAmt').value='';rEO()}
 function saveBuyer(){const name=$('bName').value.trim();if(!name)return toast('enter a name');const id=$('bId').value||uid();const old=S.buyers.find(x=>x.id===id)||{};
@@ -203,11 +215,11 @@ function delBuyer(){sure('delete this buyer?',()=>{S.buyers=S.buyers.filter(x=>x
 
 /* leads board */
 let dragId=null;
-function rBoard(){const L=S.buyers.filter(b=>b.isLead!==false);
-$('board').innerHTML=STAGES.map(([id,label])=>{const it=L.filter(b=>(b.leadStage||'new')===id);
-return `<div class="col"><div class="ch" style="background:var(--st_${id})"><span>${label}</span><span>${it.length}</span></div><div class="cb" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="dropTo(event,'${id}');this.classList.remove('over')">${it.map(b=>`<div class="lc" draggable="true" ondragstart="dragId='${b.id}';this.classList.add('drag')" ondragend="this.classList.remove('drag')" onclick="if(!event.target.closest('.call')&&!event.target.closest('textarea'))buyerModal('${b.id}')"><div class="n">${esc(b.name)}</div><div class="sub">${esc(city(b)||'no city')} - ${esc(b.phone||'no phone')}</div><div style="margin-top:6px"><span class="badge ${b.status}">${b.status}</span> ${flags(b)}</div><div class="call"><button onclick="logCall('${b.id}')">log call</button>${b.calls||0} call${(b.calls||0)===1?'':'s'}</div><textarea placeholder="add a note..." onchange="noteLead('${b.id}',this.value)">${esc(b.leadNote||'')}</textarea></div>`).join('')}</div></div>`}).join('');
-const n=L.filter(b=>b.leadStage==='not_interested').length;$('niZone').style.background='var(--st_not_interested)';$('niZone').textContent='Not Interested ('+n+') - drop here, click to open'}
-function dropTo(ev,st){ev.preventDefault();const b=S.buyers.find(x=>x.id===dragId);dragId=null;if(!b)return;const o=b.leadStage||'new';if(o===st)return;if(st==='not_interested')b.niGroup='';b.leadStage=st;lg(b,'moved '+o+' to '+st);save();renderAll()}
+function rBoard(){const L=S.buyers.filter(b=>b.isLead!==false),SL=ST(),known=new Set(SL.map(x=>x.id)),stOf=b=>{const t=b.leadStage||'new';return t==='not_interested'||known.has(t)?t:SL[0].id};
+$('board').innerHTML=SL.map(({id,name})=>{const it=L.filter(b=>stOf(b)===id);
+return `<div class="col"><div class="ch" style="background:var(--st_${id},var(--tsoft))"><span style="display:flex;align-items:center;gap:2px;min-width:0"><span>${esc(name)}</span><button class="chb" title="rename column" onclick="renStage('${id}')">\u270e</button><button class="chb" title="delete column" onclick="delStage('${id}')">\u00d7</button></span><span>${it.length}</span></div><div class="cb" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="dropTo(event,'${id}');this.classList.remove('over')">${it.map(b=>`<div class="lc" draggable="true" ondragstart="dragId='${b.id}';this.classList.add('drag')" ondragend="this.classList.remove('drag')" onclick="if(!event.target.closest('.call')&&!event.target.closest('textarea'))buyerModal('${b.id}')"><div class="n">${esc(b.name)}</div><div class="sub">${esc(city(b)||'no city')} - ${esc(b.phone||'no phone')}</div><div style="margin-top:6px"><span class="badge ${b.status}">${b.status}</span> ${flags(b)}</div><div class="call"><button onclick="logCall('${b.id}')">log call</button>${b.calls||0} call${(b.calls||0)===1?'':'s'}</div><textarea placeholder="add a note..." onchange="noteLead('${b.id}',this.value)">${esc(b.leadNote||'')}</textarea></div>`).join('')}</div></div>`}).join('');
+const n=L.filter(b=>b.leadStage==='not_interested').length;$('niZone').style.background='var(--st_not_interested)';$('niZone').innerHTML='Not Interested<b style="display:block;font-size:26px;line-height:1.1;font-family:var(--fh),serif">'+n+'</b><span style="font-size:11px;font-weight:600;opacity:.7">drop here \u00b7 click to open</span>'}
+function dropTo(ev,st){ev.preventDefault();const b=S.buyers.find(x=>x.id===dragId);dragId=null;if(!b)return;const o=b.leadStage||'new';if(o===st)return;if(st==='not_interested')b.niGroup='';b.leadStage=st;lg(b,'moved '+stName(o)+' to '+stName(st));save();renderAll()}
 function logCall(id){const b=S.buyers.find(x=>x.id===id);b.calls=(b.calls||0)+1;lg(b,'call #'+b.calls+' logged');save();rBoard();toast('call #'+b.calls+' logged')}
 function noteLead(id,v){const b=S.buyers.find(x=>x.id===id);b.leadNote=v;lg(b,'note: '+(v||'(cleared)'));save()}
 
@@ -226,11 +238,14 @@ function gOk(){const b=S.buyers.find(x=>x.id===gId);const n=$('gNew').value.trim
 function togG(n){n=decodeURIComponent(n);openG.has(n)?openG.delete(n):openG.add(n);rNI()}
 function setGroupOld(id,auto){const b=S.buyers.find(x=>x.id===id);if(auto){b.niGroup='';save();openG.add(grp(b));rNI();return}
 ask('move to group (e.g. Dallas)',grp(b),v=>{b.niGroup=v.trim();save();openG.add(grp(b));rNI();toast('group changed')})}
-function backLead(id){const b=S.buyers.find(x=>x.id===id);b.leadStage='new';lg(b,'moved back to new');save();renderAll()}
+function backLead(id){const b=S.buyers.find(x=>x.id===id);b.leadStage=firstSt();lg(b,'moved back to '+stName(firstSt()));save();renderAll()}
 
 /* templates */
 function rTpl(){
-$('tpls').innerHTML=S.tpl.map(s=>`<div class="card tpl" style="background:${s.color||'var(--card)'}"><div class="th"><input value="${esc(s.name)}" oninput="renSec('${s.id}',this.value)"><button class="btn g s" onclick="addItem('${s.id}')">+ text</button><button class="btn d s" onclick="delSec('${s.id}')">delete section</button><input type="color" value="${s.color||C.card}" title="section color" style="flex:0 0 44px;width:44px;height:30px;padding:0;border:0;background:none" oninput="secColor('${s.id}',this.value,this)"></div>${s.items.length?s.items.map(i=>`<div class="ti"><textarea placeholder="write your text..." oninput="setItem('${s.id}','${i.id}',this.value)">${esc(i.text)}</textarea><div style="display:flex;flex-direction:column;gap:5px"><button class="btn b s" onclick="copyItem('${s.id}','${i.id}')">copy</button><button class="btn d s" onclick="delItem('${s.id}','${i.id}')">x</button></div></div>`).join(''):'<div class="sub">no texts yet. press + text</div>'}</div>`).join('')}
+$('tpls').innerHTML=S.tpl.map(s=>`<div class="card tpl" style="background:${s.color||'var(--card)'}"><div class="th"><input value="${esc(s.name)}" oninput="renSec('${s.id}',this.value)"><button class="btn g s" onclick="addItem('${s.id}')">+ text</button><button class="btn d s" onclick="delSec('${s.id}')">delete section</button><input type="color" value="${s.color||C.card}" title="section color" style="flex:0 0 44px;width:44px;height:30px;padding:0;border:0;background:none" oninput="secColor('${s.id}',this.value,this)"></div>${s.items.length?s.items.map(i=>`<div class="ti"><textarea rows="1" placeholder="write your text..." oninput="grow(this);setItem('${s.id}','${i.id}',this.value)">${esc(i.text)}</textarea><div style="display:flex;flex-direction:column;gap:5px"><button class="btn b s" onclick="copyItem('${s.id}','${i.id}')">copy</button><button class="btn d s" onclick="delItem('${s.id}','${i.id}')">x</button></div></div>`).join(''):'<div class="sub">no texts yet. press + text</div>'}</div>`).join('');growAll()}
+function grow(t){t.style.height='auto';if(t.scrollHeight>0)t.style.height=t.scrollHeight+'px'}
+function growAll(){document.querySelectorAll('.ti textarea').forEach(grow)}
+addEventListener('resize',growAll);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(growAll);
 const sec=id=>S.tpl.find(x=>x.id===id);
 function addSec(){ask('section name','',n=>{if(!n.trim())return;S.tpl.push({id:uid(),name:n.trim(),items:[],order:S.tpl.length});save();rTpl()})}
 function renSec(id,v){sec(id).name=v;save()}
@@ -287,7 +302,7 @@ const d=await r.json().catch(()=>({}));if(d.error)throw new Error(d.error.messag
 const c=d.candidates&&d.candidates[0]&&d.candidates[0].content;if(!c||!c.parts||!c.parts.length)throw new Error(d.promptFeedback&&d.promptFeedback.blockReason?'blocked: '+d.promptFeedback.blockReason:'empty answer');return c}
 const sT=d=>({type:'STRING',description:d||''}),bT=d=>({type:'BOOLEAN',description:d||''}),nT=d=>({type:'INTEGER',description:d||''});
 const OB=(p,req)=>({type:'OBJECT',properties:p,required:req||[]});
-const BF={name:sT(),phone:sT(),address:sT(),city:sT(),state:sT('2-letter'),status:{type:'STRING',enum:['hot','warm','cold']},rating:nT('1-10'),notes:sT(),lead_stage:{type:'STRING',enum:['new','voicemail','follow_up','not_interested']},on_leads_board:bT(),showing:bT(),pending_showing:bT(),offer_made:bT(),pending_offer:bT()};
+const BF={name:sT(),phone:sT(),address:sT(),city:sT(),state:sT('2-letter'),status:{type:'STRING',enum:['hot','warm','cold']},rating:nT('1-10'),notes:sT(),lead_stage:sT('a column id or name from lead_columns in the data, or not_interested'),on_leads_board:bT(),showing:bT(),pending_showing:bT(),offer_made:bT(),pending_offer:bT()};
 const EF={market:sT('major market'),address:sT(),city:sT(),state:sT(),type:{type:'STRING',enum:['Single Family','HOA','Mobile Home','Land','Commercial']},price:sT(),beds:sT(),baths:sT(),sqft:sT(),notes:sT()};
 const TOOLS=[{functionDeclarations:[
 {name:'add_buyer',description:'Add a new buyer',parameters:OB(BF,['name'])},
@@ -315,6 +330,10 @@ TOOLS[0].functionDeclarations.push(
 {name:'update_acquisition',description:'Edit an acquisition lead by id',parameters:OB({id:sT(),name:sT(),phone:sT(),address:sT(),city:sT(),state:sT(),stage:{type:'STRING',enum:['new','voicemail','callback','interested','follow_up','not_interested']},temp:{type:'STRING',enum:['hot','warm','cold']},notes:sT()},['id'])},
 {name:'add_dispo_deal',description:'Add a dispo deal (text only)',parameters:OB({title:sT(),contractPrice:sT(),expiryDate:sT('YYYY-MM-DD'),description:sT(),notes:sT()},['title'])}
 );
+TOOLS[0].functionDeclarations.push(
+{name:'add_lead_column',description:'Add a new column to the leads board',parameters:OB({name:sT()},['name'])},
+{name:'rename_lead_column',description:'Rename a column of the leads board (column is its id or current name)',parameters:OB({column:sT(),new_name:sT()},['column','new_name'])}
+);
 async function runTool(n,a,acts){
 const buyer=()=>{const b=S.buyers.find(x=>x.id===a.buyer_id);if(!b)throw new Error('buyer not found, use an id from the data');return b};
 const deal=()=>{const d=S.eco.find(x=>x.id===a.deal_id);if(!d)throw new Error('ECO deal not found, use an id from the data');return d};
@@ -325,8 +344,8 @@ const ME=['market','address','city','state','price','beds','baths','sqft','notes
 switch(n){
 case 'add_buyer':{const dupB=S.buyers.find(b=>b.name.trim().toLowerCase()===String(a.name||'').trim().toLowerCase());if(dupB)return{ok:false,error:'a buyer with this name already exists',buyer_id:dupB.id};
 let c=a.city||'',st=(a.state||'').toUpperCase();if(!c&&a.address){const pa=parseAddr(a.address);if(pa){c=pa.ct;st=st||pa.st}}
-const b={id:uid(),name:a.name,phone:a.phone||'',address:a.address||'',city:c,state:st,status:a.status||'warm',rating:+a.rating||7,showing:!!a.showing,pShowing:!!a.pending_showing,offerMade:!!a.offer_made,pOffer:!!a.pending_offer,isLead:a.on_leads_board!==false,leadStage:a.lead_stage||'new',notes:a.notes||'',offers:[],log:[]};S.buyers.push(b);lg(b,'buyer created by AI chat');return done('added buyer '+b.name,{buyer_id:b.id})}
-case 'update_buyer':{const b=buyer(),ch=[];for(const k in MB){if(a[k]===undefined)continue;let v=a[k];if(k==='state')v=String(v).toUpperCase();if(k==='rating')v=+v||b.rating;b[MB[k]]=v;ch.push(k)}lg(b,'AI chat edited: '+(ch.join(', ')||'nothing'));return done('updated '+b.name+' ('+ch.join(', ')+')')}
+const b={id:uid(),name:a.name,phone:a.phone||'',address:a.address||'',city:c,state:st,status:a.status||'warm',rating:+a.rating||7,showing:!!a.showing,pShowing:!!a.pending_showing,offerMade:!!a.offer_made,pOffer:!!a.pending_offer,isLead:a.on_leads_board!==false,leadStage:a.lead_stage?resolveSt(a.lead_stage):firstSt(),notes:a.notes||'',offers:[],log:[]};S.buyers.push(b);lg(b,'buyer created by AI chat');return done('added buyer '+b.name,{buyer_id:b.id})}
+case 'update_buyer':{const b=buyer(),ch=[];for(const k in MB){if(a[k]===undefined)continue;let v=a[k];if(k==='state')v=String(v).toUpperCase();if(k==='rating')v=+v||b.rating;if(k==='lead_stage')v=resolveSt(v);b[MB[k]]=v;ch.push(k)}lg(b,'AI chat edited: '+(ch.join(', ')||'nothing'));return done('updated '+b.name+' ('+ch.join(', ')+')')}
 case 'add_offer':{const b=buyer();(b.offers=b.offers||[]).push({location:a.location,amount:a.amount,date:today()});lg(b,'offer added: '+a.amount+' '+a.location);return done('offer '+a.amount+' added to '+b.name)}
 case 'log_call':{const b=buyer();b.calls=(b.calls||0)+1;lg(b,'call #'+b.calls+' logged');return done('call #'+b.calls+' logged for '+b.name)}
 case 'add_lead_note':{const b=buyer();b.leadNote=a.note;lg(b,'note: '+a.note);return done('note saved for '+b.name)}
@@ -344,6 +363,8 @@ case 'restore_eco_deal':{const d=deal();d.trashed=false;return done('restored '+
 case 'delete_eco_deal_forever':{const d=deal();if(!await confirmP('delete ECO deal '+d.address+' forever?'))return{ok:false,cancelled:true};S.eco=S.eco.filter(x=>x!==d);return done('deleted '+d.address+' forever')}
 case 'add_closed_deal':{S.closed.push({id:uid(),address:a.address,info:a.info||'',buyer:a.buyer||'',notes:a.notes||'',photos:[],calls:[]});return done('added closed deal '+a.address)}
 case 'add_template_text':{let s=S.tpl.find(x=>x.name.trim().toLowerCase()===String(a.section||'').trim().toLowerCase());if(!s){s={id:uid(),name:a.section,items:[]};S.tpl.push(s)}s.items.push({id:uid(),text:a.text});return done('text added to template section '+s.name)}
+case 'add_lead_column':{const nm=String(a.name||'').trim();if(!nm)throw new Error('a name is needed');stMat();S.stages.push({id:'c_'+uid(),name:nm,order:Math.max(-1,...S.stages.map(x=>x.order||0))+1});return done('added leads column '+nm)}
+case 'rename_lead_column':{const f=ST().find(x=>x.id===a.column||x.name.trim().toLowerCase()===String(a.column||'').trim().toLowerCase());if(!f)throw new Error('column not found, use a column from lead_columns');stMat();S.stages.find(x=>x.id===f.id).name=String(a.new_name).trim();return done('renamed column '+f.name+' to '+a.new_name)}
 case 'add_wholesaler':{const w={id:uid(),name:a.name,phone:a.phone||'',city:a.city||'',state:(a.state||'').toUpperCase(),stage:a.stage||'new',notes:a.notes||'',leftText:!!a.leftText,callCount:0,fileName:'',fileData:'',updatedAt:new Date().toISOString()};S.wholesalers.push(w);return done('added wholesaler '+w.name,{id:w.id})}
 case 'update_wholesaler':{const w=S.wholesalers.find(x=>x.id===a.id);if(!w)throw new Error('wholesaler not found, use an id from the data');['name','phone','city','state','stage','notes','leftText'].forEach(k=>{if(a[k]!==undefined)w[k]=k==='state'?String(a[k]).toUpperCase():a[k]});w.updatedAt=new Date().toISOString();return done('updated wholesaler '+w.name)}
 case 'add_acquisition':{const x={id:uid(),name:a.name,phone:a.phone||'',address:a.address||'',city:a.city||'',state:(a.state||'').toUpperCase(),stage:a.stage||'new',temp:a.temp||'warm',notes:a.notes||'',callCount:0,photos:[],recordingName:'',recordingData:'',updatedAt:new Date().toISOString()};S.acq.push(x);return done('added acquisition lead '+x.name,{id:x.id})}
@@ -351,7 +372,7 @@ case 'update_acquisition':{const x=S.acq.find(y=>y.id===a.id);if(!x)throw new Er
 case 'add_dispo_deal':{const d={id:uid(),title:a.title,contractPrice:a.contractPrice||'',expiryDate:a.expiryDate||'',description:a.description||'',notes:a.notes||'',photos:[],buyers:[],updatedAt:new Date().toISOString()};S.dispo.push(d);return done('added dispo deal '+d.title,{id:d.id})}
 default:return{ok:false,error:'unknown tool '+n}}}
 async function askAI(){const i=$('aiQ'),q=i.value.trim();if(!q)return;const L=$('aiL');L.innerHTML+=`<div class="am u">${esc(q)}</div>`;i.value='';L.scrollTop=L.scrollHeight;
-const snap={buyers:S.buyers.map(b=>({id:b.id,name:b.name,phone:b.phone,address:b.address,city:b.city,state:b.state,status:b.status,rating:b.rating,stage:b.leadStage,on_leads_board:b.isLead!==false,notes:b.notes,lead_note:b.leadNote,calls:b.calls||0,showing:!!b.showing,pending_showing:!!b.pShowing,offer_made:!!b.offerMade,pending_offer:!!b.pOffer,offers:b.offers})),tasks:S.tasks.map(t=>({id:t.id,title:t.title,due:t.dueDate,time:t.dueTime,buyer_id:t.buyerId,done:t.done,notes:t.notes})),eco_deals:S.eco.map(d=>({id:d.id,market:mkey(d),address:d.address,city:d.city,type:d.type,price:d.price,trashed:!!d.trashed})),closed_deals:S.closed.map(d=>({id:d.id,address:d.address,buyer:d.buyer})),wholesalers:S.wholesalers.map(w=>({id:w.id,name:w.name,phone:w.phone,city:w.city,state:w.state,stage:w.stage,notes:w.notes,texted:!!w.leftText,calls:w.callCount||0})),acquisition_leads:S.acq.map(a=>({id:a.id,name:a.name,phone:a.phone,address:a.address,city:a.city,state:a.state,stage:a.stage,temp:a.temp,notes:a.notes,calls:a.callCount||0})),dispo_deals:S.dispo.map(d=>({id:d.id,title:d.title,price:d.contractPrice,expires:d.expiryDate,interested_buyers:(d.buyers||[]).length})),template_sections:S.tpl.map(s=>s.name)};
+const snap={buyers:S.buyers.map(b=>({id:b.id,name:b.name,phone:b.phone,address:b.address,city:b.city,state:b.state,status:b.status,rating:b.rating,stage:b.leadStage,on_leads_board:b.isLead!==false,notes:b.notes,lead_note:b.leadNote,calls:b.calls||0,showing:!!b.showing,pending_showing:!!b.pShowing,offer_made:!!b.offerMade,pending_offer:!!b.pOffer,offers:b.offers})),tasks:S.tasks.map(t=>({id:t.id,title:t.title,due:t.dueDate,time:t.dueTime,buyer_id:t.buyerId,done:t.done,notes:t.notes})),eco_deals:S.eco.map(d=>({id:d.id,market:mkey(d),address:d.address,city:d.city,type:d.type,price:d.price,trashed:!!d.trashed})),closed_deals:S.closed.map(d=>({id:d.id,address:d.address,buyer:d.buyer})),wholesalers:S.wholesalers.map(w=>({id:w.id,name:w.name,phone:w.phone,city:w.city,state:w.state,stage:w.stage,notes:w.notes,texted:!!w.leftText,calls:w.callCount||0})),acquisition_leads:S.acq.map(a=>({id:a.id,name:a.name,phone:a.phone,address:a.address,city:a.city,state:a.state,stage:a.stage,temp:a.temp,notes:a.notes,calls:a.callCount||0})),dispo_deals:S.dispo.map(d=>({id:d.id,title:d.title,price:d.contractPrice,expires:d.expiryDate,interested_buyers:(d.buyers||[]).length})),lead_columns:ST().map(x=>({id:x.id,name:x.name})),template_sections:S.tpl.map(s=>s.name)};
 const sys='You are the assistant inside a real estate buyers CRM called Hafez and you can read and change all of its data with the tools. Today is '+today()+'. Use the ids from the data below, never invent ids. When the user asks you to add, edit, move or remove something, call the tools and do it, do not just explain. Deleting asks the user to confirm. Reply briefly in the language the user writes in. DATA: '+JSON.stringify(snap);
 const contents=[...aiHist,{role:'user',parts:[{text:q}]}],acts=[];let ans='';
 try{for(let k=0;k<8;k++){const c=await aiRaw(sys,contents,TOOLS);const parts=c.parts;contents.push({role:'model',parts});const calls=parts.filter(p=>p.functionCall);
@@ -365,7 +386,7 @@ function secColor(id,v,el){sec(id).color=v;save();el.closest('.tpl').style.backg
 function lg(b,x){(b.log=b.log||[]).push({t:new Date().toISOString(),x:x})}
 /* lead profile */
 function profile(id){const b=S.buyers.find(x=>x.id===id);if(!b)return;
-$('pmBody').innerHTML=`<h2>${esc(b.name)}</h2><div class="sub">${esc(b.phone||'no phone')} - ${esc([b.address,city(b),b.state].filter(Boolean).join(', ')||'no address')}</div><div style="margin:8px 0"><span class="badge ${b.status}">${b.status}</span> <span class="badge cold">★ ${b.rating}/10</span> <span class="badge warm">${esc(b.leadStage||'new')}</span> <span class="badge cold">group: ${esc(grp(b))}</span> <span class="badge cold">${b.calls||0} calls</span> ${flags(b)}</div>${b.notes?`<div class="f"><label>notes</label><div>${esc(b.notes)}</div></div>`:''}${b.leadNote?`<div class="f"><label>lead note</label><div>${esc(b.leadNote)}</div></div>`:''}${(b.offers||[]).length?`<div class="f"><label>offers</label>${b.offers.map(o=>`<div class="sub">${esc(o.amount)} - ${esc(o.location)} (${esc(o.date)})</div>`).join('')}</div>`:''}<div class="f"><label>history</label>${(b.log||[]).length?[...b.log].reverse().map(e=>`<div class="lg"><small>${new Date(e.t).toLocaleString()}</small>${esc(e.x)}</div>`).join(''):'<div class="sub">no history yet</div>'}</div><div class="acts"><button class="btn g" onclick="cl('pm')">close</button><button class="btn b" onclick="cl('pm');buyerModal('${b.id}')">edit</button></div>`;op('pm')}
+$('pmBody').innerHTML=`<h2>${esc(b.name)}</h2><div class="sub">${esc(b.phone||'no phone')} - ${esc([b.address,city(b),b.state].filter(Boolean).join(', ')||'no address')}</div><div style="margin:8px 0"><span class="badge ${b.status}">${b.status}</span> <span class="badge cold">★ ${b.rating}/10</span> <span class="badge warm">${esc(stName(b.leadStage||'new'))}</span> <span class="badge cold">group: ${esc(grp(b))}</span> <span class="badge cold">${b.calls||0} calls</span> ${flags(b)}</div>${b.notes?`<div class="f"><label>notes</label><div>${esc(b.notes)}</div></div>`:''}${b.leadNote?`<div class="f"><label>lead note</label><div>${esc(b.leadNote)}</div></div>`:''}${(b.offers||[]).length?`<div class="f"><label>offers</label>${b.offers.map(o=>`<div class="sub">${esc(o.amount)} - ${esc(o.location)} (${esc(o.date)})</div>`).join('')}</div>`:''}<div class="f"><label>history</label>${(b.log||[]).length?[...b.log].reverse().map(e=>`<div class="lg"><small>${new Date(e.t).toLocaleString()}</small>${esc(e.x)}</div>`).join(''):'<div class="sub">no history yet</div>'}</div><div class="acts"><button class="btn g" onclick="cl('pm')">close</button><button class="btn b" onclick="cl('pm');buyerModal('${b.id}')">edit</button></div>`;op('pm')}
 /* address autofill */
 const STATES='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
 function parseAddr(a){const p=a.split(',').map(x=>x.trim()).filter(Boolean);if(p.length<2)return null;const last=p[p.length-1];let m=last.match(/^([A-Za-z]{2})(\s+\d{5}(-\d{4})?)?$/);
@@ -570,7 +591,7 @@ function dpNote(id,v){const b=dpE.buyers.find(x=>x.id===id);if(b)b.note=v}
 
 /* cloud: the same firebase project and collections as the old Hafez site (no login). every item is its own document.
    the page only writes to a collection after it loaded that collection successfully, so a failed load can never wipe your data */
-const CLOUD={buyers:'buyers',tasks:'tasks',wholesalers:'wholesalers',acq:'acquisitions',dispo:'deals',closed:'closed_deals',eco:'eco',tpl:'templates'};
+const CLOUD={buyers:'buyers',tasks:'tasks',wholesalers:'wholesalers',acq:'acquisitions',dispo:'deals',closed:'closed_deals',eco:'eco',tpl:'templates',stages:'lead_stages'};
 let cOK=new Set(),cSnap={},cReady=false,cTimer=null,cBusy=false,cAgain=false,cLast=0;
 function cSt(m){['cloudSt','cloudSt2'].forEach(i=>{const e=$(i);if(e)e.textContent=m})}
 const cMapOf=st=>{const m={};for(const k in CLOUD){if(!cOK.has(k))continue;(st[k]||[]).forEach(x=>{if(x&&x.id)m[k+'/'+x.id]=JSON.stringify(x)})}return m};
@@ -580,7 +601,7 @@ function normBuyer(b){if(b.showing===undefined)b.showing=!!b.sawShowing;if(b.off
 async function pullAll(){
 const {collection,getDocs}=window.FirestoreModules,next={},ok=new Set(),bad=[];
 for(const k in CLOUD){try{const snap=await getDocs(collection(window.db,CLOUD[k]));next[k]=snap.docs.map(d=>({id:d.id,...d.data()}));ok.add(k)}catch(e){console.error('could not read '+CLOUD[k],e);bad.push(CLOUD[k])}}
-if(next.buyers)next.buyers.forEach(normBuyer);if(next.tpl)next.tpl.sort((a,b)=>(a.order||0)-(b.order||0));
+if(next.buyers)next.buyers.forEach(normBuyer);if(next.tpl)next.tpl.sort((a,b)=>(a.order||0)-(b.order||0));if(next.stages)next.stages.sort((a,b)=>(a.order||0)-(b.order||0));
 return{next,ok,bad}}
 function cApply(p){p.ok.forEach(k=>{S[k]=p.next[k]});cOK=p.ok;cSnap=cMapOf(S);renderAll()}
 async function loadDataFromFirebase(){
@@ -591,6 +612,7 @@ if(!p.ok.size){cSt('cloud: could not load (check internet and Firestore rules). 
 const total=[...p.ok].reduce((t,k)=>t+p.next[k].length,0);
 if(total===0){cOK=p.ok;cSnap={}}else cApply(p);
 let seeded=false;if(cOK.has('tpl')&&!S.tpl.length){S.tpl=['Intro','Follow up','No answer','Extras'].map((n,i)=>({id:uid(),name:n,items:[],order:i}));seeded=true}
+if(cOK.has('stages')&&!S.stages.length){S.stages=DEFAULT_STAGES.map(x=>({...x}));seeded=true}
 cReady=true;renderAll();
 cSt(p.bad.length?'cloud: connected, but no access to '+p.bad.join(', ')+' (add them to the Firestore rules)':'cloud: connected');
 if(seeded||total===0)cloudDirty()}
